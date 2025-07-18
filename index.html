@@ -1087,7 +1087,7 @@
         const addEditProductForm = document.getElementById('add-edit-product-form');
         const editProductIdInput = document.getElementById('edit-product-id');
         const newProductNameInput = document.getElementById('new-product-name');
-        const newProductBasePriceInput = document.getElementById('new-product-base-price'); // Fixed: Removed `= document`
+        const newProductBasePriceInput = document.getElementById('new-product-base-price');
         const newProductImageInput = document.getElementById('new-product-image');
         const newProductDescriptionInput = document.getElementById('new-product-description');
         const newProductReviewsInput = document.getElementById('new-product-reviews');
@@ -2482,6 +2482,7 @@
             }
         });
 
+        // Thêm nút sao chép sản phẩm
         function renderProductManagementList() {
             productManagementList.innerHTML = '';
             if (shopDataCache.products.length === 0) {
@@ -2500,6 +2501,7 @@
                         </div>
                     </div>
                     <div class="flex space-x-2">
+                        <button class="copy-product-btn bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-3 rounded-lg transition-all duration-200" data-product-id="${product.id}">Sao chép</button>
                         <button class="edit-product-btn bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-3 rounded-lg transition-all duration-200" data-product-id="${product.id}">Sửa</button>
                         <button class="delete-product-btn bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-3 rounded-lg transition-all duration-200" data-product-id="${product.id}">Xóa</button>
                     </div>
@@ -2507,9 +2509,20 @@
                 productManagementList.appendChild(productDiv);
             });
 
+            document.querySelectorAll('.copy-product-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    if (!loggedInUser || !loggedInUser.isAdmin) {
+                        showMessage('Chờ admin kiểm duyệt', 'info');
+                        return;
+                    }
+                    const productId = e.target.dataset.productId;
+                    copyProduct(productId);
+                });
+            });
+
             document.querySelectorAll('.edit-product-btn').forEach(button => {
                 button.addEventListener('click', (e) => {
-                    if (!loggedInUser || !loggedInUser.isAdmin) { // Added null check for loggedInUser
+                    if (!loggedInUser || !loggedInUser.isAdmin) {
                         showMessage('Chờ admin kiểm duyệt', 'info');
                         return;
                     }
@@ -2520,7 +2533,7 @@
 
             document.querySelectorAll('.delete-product-btn').forEach(button => {
                 button.addEventListener('click', async (e) => {
-                    if (!loggedInUser || !loggedInUser.isAdmin) { // Added null check for loggedInUser
+                    if (!loggedInUser || !loggedInUser.isAdmin) {
                         showMessage('Chờ admin kiểm duyệt', 'info');
                         return;
                     }
@@ -2545,6 +2558,30 @@
             variantsContainer.innerHTML = '';
             submitProductBtn.textContent = 'Thêm Sản Phẩm';
             cancelEditBtn.classList.add('hidden');
+        }
+
+        // Cập nhật hàm sao chép sản phẩm
+        function copyProduct(productId) {
+            const product = shopDataCache.products.find(p => p.id === productId);
+            if (!product) {
+                showMessage('Không tìm thấy sản phẩm để sao chép.', 'error');
+                return;
+            }
+
+            // Tạo một bản sao của sản phẩm và gán ID mới
+            const copiedProduct = JSON.parse(JSON.stringify(product));
+            copiedProduct.id = generateId();
+            copiedProduct.name = `Bản sao của ${product.name}`; // Đổi tên để dễ nhận biết
+
+            // Reset số lượng đã bán cho bản sao
+            copiedProduct.variants.forEach(variant => {
+                variant.sold = 0;
+            });
+
+            // Thêm bản sao vào danh sách sản phẩm và hiển thị form chỉnh sửa
+            shopDataCache.products.push(copiedProduct);
+            showMessage('Đã sao chép sản phẩm. Vui lòng chỉnh sửa và lưu.', 'success');
+            editProduct(copiedProduct.id); // Mở form chỉnh sửa với sản phẩm đã sao chép
         }
 
         addEditProductForm.addEventListener('submit', async (e) => {
@@ -2582,8 +2619,9 @@
                 const color = item.querySelector('select[data-type="color-select"]').value;
                 const storage = item.querySelector('select[data-type="storage-select"]').value;
                 const quantity = parseInt(item.querySelector('input[placeholder="Số lượng"]').value) || 0;
+                const sold = parseInt(item.querySelector('input[placeholder="Số lượng đã bán"]').value) || 0; // Lấy giá trị số lượng đã bán
                 const priceImpact = parseFloat(item.querySelector('input[placeholder="Giá tác động"]').value) || 0;
-                if (color && storage) variants.push({ color, storage, quantity, priceImpact, sold: 0 });
+                if (color && storage) variants.push({ color, storage, quantity, priceImpact, sold });
             });
 
             const newProduct = {
@@ -2617,6 +2655,7 @@
             hideLoading();
         });
 
+        // Cập nhật hàm editProduct để hiển thị số lượng đã bán
         async function editProduct(productId) {
             const product = shopDataCache.products.find(p => p.id === productId);
             if (!product) {
@@ -2639,7 +2678,7 @@
             product.storages.forEach(storage => addStorageOption(storage.name, storage.priceImpact));
 
             variantsContainer.innerHTML = '';
-            product.variants.forEach(variant => addVariant(variant.color, variant.storage, variant.quantity, variant.priceImpact));
+            product.variants.forEach(variant => addVariant(variant.color, variant.storage, variant.quantity, variant.priceImpact, variant.sold));
 
             submitProductBtn.textContent = 'Lưu Thay Đổi';
             cancelEditBtn.classList.remove('hidden');
@@ -2664,7 +2703,35 @@
 
         addColorOptionBtn.addEventListener('click', () => addColorOption('', 0, ''));
         addStorageOptionBtn.addEventListener('click', () => addStorageOption('', 0));
-        addVariantBtn.addEventListener('click', () => addVariant('', '', 0, 0));
+        addVariantBtn.addEventListener('click', () => addVariant('', '', 0, 0, 0)); // Thêm giá trị mặc định cho sold
+
+        // Cập nhật hàm addVariant để thêm ô số lượng đã bán
+        function addVariant(color = '', storage = '', quantity = 0, priceImpact = 0, sold = 0) {
+            const div = document.createElement('div');
+            div.className = 'flex items-center space-x-2 variant-item';
+            const currentColors = Array.from(colorOptionsContainer.querySelectorAll('input[placeholder="Tên màu"]')).map(input => input.value.trim()).filter(Boolean);
+            const currentStorages = Array.from(storageOptionsContainer.querySelectorAll('input[placeholder="Tên dung lượng"]')).map(input => input.value.trim()).filter(Boolean);
+
+            const colorSelectHtml = `<select data-type="color-select" class="shadow appearance-none border rounded-lg py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 flex-1">
+                <option value="">Chọn màu</option>
+                ${currentColors.map(c => `<option value="${c}" ${c === color ? 'selected' : ''}>${c}</option>`).join('')}
+            </select>`;
+            const storageSelectHtml = `<select data-type="storage-select" class="shadow appearance-none border rounded-lg py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 flex-1">
+                <option value="">Chọn dung lượng</option>
+                ${currentStorages.map(s => `<option value="${s}" ${s === storage ? 'selected' : ''}>${s}</option>`).join('')}
+            </select>`;
+
+            div.innerHTML = `
+                ${colorSelectHtml}
+                ${storageSelectHtml}
+                <input type="number" placeholder="Số lượng" value="${quantity}" class="shadow appearance-none border rounded-lg py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 w-24">
+                <input type="number" placeholder="Số lượng đã bán" value="${sold}" class="shadow appearance-none border rounded-lg py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 w-32">
+                <input type="number" placeholder="Giá tác động" value="${priceImpact}" class="shadow appearance-none border rounded-lg py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 w-32">
+                <button type="button" class="remove-option-btn bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-3 rounded-lg"><i class="fas fa-minus"></i></button>
+            `;
+            variantsContainer.appendChild(div);
+            div.querySelector('.remove-option-btn').addEventListener('click', () => div.remove());
+        }
 
         function addColorOption(name = '', priceImpact = 0, display_image = '') {
             const div = document.createElement('div');
@@ -2688,34 +2755,6 @@
                 <button type="button" class="remove-option-btn bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-3 rounded-lg"><i class="fas fa-minus"></i></button>
             `;
             storageOptionsContainer.appendChild(div);
-            div.querySelector('.remove-option-btn').addEventListener('click', () => div.remove());
-        }
-
-        function addVariant(color = '', storage = '', quantity = 0, priceImpact = 0) {
-            const div = document.createElement('div');
-            div.className = 'flex items-center space-x-2 variant-item';
-            // When adding a new variant, we need to get current color and storage options from the form inputs, not from an existing product
-            // This is a simplified approach, a more robust solution would involve dynamically updating these dropdowns based on current color/storage inputs
-            const currentColors = Array.from(colorOptionsContainer.querySelectorAll('input[placeholder="Tên màu"]')).map(input => input.value.trim()).filter(Boolean);
-            const currentStorages = Array.from(storageOptionsContainer.querySelectorAll('input[placeholder="Tên dung lượng"]')).map(input => input.value.trim()).filter(Boolean);
-
-            const colorSelectHtml = `<select data-type="color-select" class="shadow appearance-none border rounded-lg py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 flex-1">
-                <option value="">Chọn màu</option>
-                ${currentColors.map(c => `<option value="${c}" ${c === color ? 'selected' : ''}>${c}</option>`).join('')}
-            </select>`;
-            const storageSelectHtml = `<select data-type="storage-select" class="shadow appearance-none border rounded-lg py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 flex-1">
-                <option value="">Chọn dung lượng</option>
-                ${currentStorages.map(s => `<option value="${s}" ${s === storage ? 'selected' : ''}>${s}</option>`).join('')}
-            </select>`;
-
-            div.innerHTML = `
-                ${colorSelectHtml}
-                ${storageSelectHtml}
-                <input type="number" placeholder="Số lượng" value="${quantity}" class="shadow appearance-none border rounded-lg py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 w-24">
-                <input type="number" placeholder="Giá tác động" value="${priceImpact}" class="shadow appearance-none border rounded-lg py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 w-32">
-                <button type="button" class="remove-option-btn bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-3 rounded-lg"><i class="fas fa-minus"></i></button>
-            `;
-            variantsContainer.appendChild(div);
             div.querySelector('.remove-option-btn').addEventListener('click', () => div.remove());
         }
 

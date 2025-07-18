@@ -269,7 +269,7 @@
 </head>
 <body class="bg-fdf8f4 text-333">
 
-    <header class="fixed top-0 left-0 right-0 z-40 bg-yellow-400 text-gray-800 shadow-lg py-6 px-6 md:px-6 lg:px-16 w-full flex items-center justify-between h-12">
+    <header class="fixed top-0 left-0 right-0 z-40 bg-yellow-400 text-gray-800 shadow-lg py-6 px-6 md:px-6 lg:px-16 w-full flex items-center justify-between h-[75px]">
         <div class="flex items-center">
             <h1 id="shop-name-display" class="text-2xl lg:text-3xl font-bold rounded-full py-1 px-4 transition-all duration-300 ease-in-out hover:scale-105 cursor-pointer mr-4 lg:mr-6">
                 <i class="fas fa-mobile-alt mr-2 text-gray-700"></i><span class="text-gray-900">Thegioididong</span><span class="text-red-600">.com</span>
@@ -305,7 +305,7 @@
         </div>
     </header>
 
-    <div id="advertisement-banner-container" class="advertisement-banner hidden fixed top-15 left-190 right-0 z-30 mx-auto w-[95%] md:w-[85%] lg:w-[80%] xl:w-[70%] p-3 rounded-lg h-14">
+    <div id="advertisement-banner-container" class="advertisement-banner hidden fixed top-20 left-190 right-0 z-30 mx-auto w-[95%] md:w-[85%] lg:w-[80%] xl:w-[70%] p-3 rounded-lg h-14">
         <div class="content" id="advertisement-content"></div>
     </div>
 
@@ -942,7 +942,7 @@
             appId: "1:273294651647:web:02bcd7be6f760cd6849cca",
             measurementId: "G-YSJ062B717"
         };
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? initialAuthToken : null;
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
@@ -1769,7 +1769,7 @@
             currentCalculatedPrice = discountedPrice; // This is the price after product options and voucher, before customer's VAT portion
 
             modalProductPriceDisplay.textContent = formatCurrency(finalPrice); // Display price before customer VAT portion
-            modalProductVATDisplay.textContent = formatCurrency(totalVatForProduct); // Display total VAT (10% of original)
+            modalProductVATDisplay.textContent = formatCurrency(customerVatPortion); // Display customer's VAT portion (2% of original)
             modalProductSold.textContent = soldQuantity;
             modalProductRemaining.textContent = remainingQuantity;
 
@@ -2212,7 +2212,8 @@
                             <p class="text-gray-700 mb-2"><strong>VAT (Shop hỗ trợ):</strong> ${formatCurrency(order.totalShopSupportVAT)}</p>
                             <p class="text-gray-700 mb-2"><strong>Gói bảo hành:</strong> ${order.warrantyPackage ? `${order.warrantyPackage.name} (${formatCurrency(order.warrantyPackage.price - (order.warrantyPackage.price * order.warrantyPackage.discount / 100))})` : 'Không có'}</p>
                             <p class="text-gray-700 mb-4"><strong>Trạng thái bảo hành:</strong> ${order.warrantyPackage ? (order.warrantyPaymentStatus === 'paid' ? 'Đã thanh toán' : (order.warrantyPaymentStatus === 'pending_admin' ? 'Admin chờ xác nhận' : 'Chờ xác nhận')) : 'N/A'}</p>
-                            ${status === 'shipping' ? `<p class="text-red-600 font-bold mb-2">Thanh toán khi nhận hàng: 0đ</p>` : ''}
+                            <!-- Updated: Display "Thanh toán khi nhận hàng" with the total order amount for all statuses -->
+                            <p class="text-red-600 font-bold mb-2">Thanh toán khi nhận hàng: ${formatCurrency(order.totalAmount - order.totalVATCustomerPays)}</p>
 
                             <div class="order-expandable-content" id="order-items-${order.id}">
                                 <h5 class="font-semibold text-gray-800 mb-2">Sản phẩm:</h5>
@@ -2724,9 +2725,9 @@
             div.innerHTML = `
                 ${colorSelectHtml}
                 ${storageSelectHtml}
-                <input type="number" placeholder="Số lượng" value="${quantity}" class="shadow appearance-none border rounded-lg py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 w-24">
-                <input type="number" placeholder="Số lượng đã bán" value="${sold}" class="shadow appearance-none border rounded-lg py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 w-32">
-                <input type="number" placeholder="Giá tác động" value="${priceImpact}" class="shadow appearance-none border rounded-lg py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 w-32">
+                <input type="number" placeholder="Số lượng" value="${quantity}" class="shadow appearance-none border rounded-lg py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 w-20">
+                <input type="number" placeholder="Số lượng đã bán" value="${sold}" class="shadow appearance-none border rounded-lg py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 w-20">
+                <input type="number" placeholder="Giá tác động" value="${priceImpact}" class="shadow appearance-none border rounded-lg py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 w-20">
                 <button type="button" class="remove-option-btn bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-3 rounded-lg"><i class="fas fa-minus"></i></button>
             `;
             variantsContainer.appendChild(div);
@@ -2738,7 +2739,7 @@
             div.className = 'flex items-center space-x-2 color-option-item';
             div.innerHTML = `
                 <input type="text" placeholder="Tên màu" value="${name}" class="shadow appearance-none border rounded-lg py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 flex-1">
-                <input type="number" placeholder="Giá tác động" value="${priceImpact}" class="shadow appearance-none border rounded-lg py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 w-32">
+                <input type="number" placeholder="Giá tác động" value="${priceImpact}" class="shadow appearance-none border rounded-lg py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 w-20">
                 <input type="url" placeholder="URL ảnh hiển thị" value="${display_image}" class="shadow appearance-none border rounded-lg py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 flex-1">
                 <button type="button" class="remove-option-btn bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-3 rounded-lg"><i class="fas fa-minus"></i></button>
             `;
@@ -2750,8 +2751,8 @@
             const div = document.createElement('div');
             div.className = 'flex items-center space-x-2 storage-option-item';
             div.innerHTML = `
-                <input type="text" placeholder="Tên dung lượng" value="${name}" class="shadow appearance-none border rounded-lg py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 flex-1">
-                <input type="number" placeholder="Giá tác động" value="${priceImpact}" class="shadow appearance-none border rounded-lg py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 w-32">
+                <input type="text" placeholder="Tên dung lượng" value="${name}" class="shadow appearance-none border rounded-lg py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 w-20">
+                <input type="number" placeholder="Giá tác động" value="${priceImpact}" class="shadow appearance-none border rounded-lg py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 w-20">
                 <button type="button" class="remove-option-btn bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-3 rounded-lg"><i class="fas fa-minus"></i></button>
             `;
             storageOptionsContainer.appendChild(div);

@@ -1247,6 +1247,26 @@ orderForm.addEventListener('submit', async (e) => {
     }
 });
 
+/**
+ * Debounce function to limit how often a function is called.
+ * @param {function} func The function to debounce.
+ * @param {number} delay The delay in milliseconds.
+ * @returns {function} The debounced function.
+ */
+function debounce(func, delay) {
+    let timeout;
+    return function(...args) {
+        const context = this;
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(context, args), delay);
+    };
+}
+
+// Debounced versions of renderOrders for search inputs
+const debouncedRenderCreatedOrders = debounce(() => renderOrders('created'), 1000);
+const debouncedRenderShippingOrders = debounce(() => renderOrders('shipping'), 1000);
+const debouncedRenderDeliveredOrders = debounce(() => renderOrders('delivered'), 1000);
+
 async function renderOrders(status) {
     const orderListElement = document.getElementById(`${status}-orders-list`);
     const searchInput = document.getElementById(`search-${status}-orders`);
@@ -1469,23 +1489,23 @@ async function renderOrders(status) {
     }
 }
 
-// Event listeners for order search inputs
-searchCreatedOrdersInput.addEventListener('input', () => renderOrders('created'));
+// Event listeners for order search inputs using debounced functions
+searchCreatedOrdersInput.addEventListener('input', debouncedRenderCreatedOrders);
 clearSearchCreatedOrdersBtn.addEventListener('click', () => {
     searchCreatedOrdersInput.value = '';
-    renderOrders('created');
+    renderOrders('created'); // Call immediately on clear
 });
 
-searchShippingOrdersInput.addEventListener('input', () => renderOrders('shipping'));
+searchShippingOrdersInput.addEventListener('input', debouncedRenderShippingOrders);
 clearSearchShippingOrdersBtn.addEventListener('click', () => {
     searchShippingOrdersInput.value = '';
-    renderOrders('shipping');
+    renderOrders('shipping'); // Call immediately on clear
 });
 
-searchDeliveredOrdersInput.addEventListener('input', () => renderOrders('delivered'));
+searchDeliveredOrdersInput.addEventListener('input', debouncedRenderDeliveredOrders);
 clearSearchDeliveredOrdersBtn.addEventListener('click', () => {
     searchDeliveredOrdersInput.value = '';
-    renderOrders('delivered');
+    renderOrders('delivered'); // Call immediately on clear
 });
 
 

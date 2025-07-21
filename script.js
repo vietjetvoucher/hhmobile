@@ -17,7 +17,7 @@ const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__f
     appId: "1:273294651647:web:02bcd7be6f760cd6849cca",
     measurementId: "G-YSJ062B717"
 };
-const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? initialAuthToken : null;
+const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null; // Corrected variable name
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
@@ -204,7 +204,7 @@ const shippingUnitImageURLInput = document.getElementById('shipping-unit-image-u
 const uploadShippingUnitImageBtn = document.getElementById('upload-shipping-unit-image-btn');
 
 const reportStartDateInput = document.getElementById('report-start-date');
-const reportEndDateInput = document.getElementById('report-end-date');
+const reportEndDateInput = document = document.getElementById('report-end-date');
 const generateReportBtn = document.getElementById('generate-report-btn');
 const totalRevenueDisplay = document.getElementById('total-revenue-display');
 const totalOrdersDisplay = document.getElementById('total-orders-display');
@@ -1326,10 +1326,10 @@ async function renderOrders(status) {
                     <p class="text-gray-700 mb-2"><strong>Vị trí kho:</strong> ${order.orderLocation || 'N/A'}</p>
                     <p class="text-gray-700 mb-2"><strong>Ngày dự kiến giao:</strong> ${order.estimatedDeliveryDate || 'N/A'}</p>
                     <p class="text-gray-700 mb-2"><strong>Tổng tiền:</strong> ${formatCurrency(order.totalAmount)}</p>
-                    <p class="text-gray-700 mb-2"><strong>VAT (Khách trả):</strong> ${formatCurrency(order.totalVATCustomerPays)} (${order.vatPaymentStatus === 'paid' ? 'Đã thanh toán' : (order.vatPaymentStatus === 'pending_admin' ? 'Admin chờ xác nhận' : 'Chờ xác nhận')})</p>
+                    <p class="text-gray-700 mb-2"><strong>VAT (Khách trả):</strong> ${formatCurrency(order.totalVATCustomerPays)} (${order.vatPaymentStatus === 'paid' ? 'Đã thanh toán' : (order.vatPaymentStatus === 'pending_admin' ? 'Đang xác nhận thanh toán' : 'Chưa thanh toán')})</p>
                     <p class="text-gray-700 mb-2"><strong>VAT (Shop hỗ trợ):</strong> ${formatCurrency(order.totalShopSupportVAT)}</p>
                     <p class="text-gray-700 mb-2"><strong>Gói bảo hành:</strong> ${order.warrantyPackage ? `${order.warrantyPackage.name} (${formatCurrency(order.warrantyPackage.price - (order.warrantyPackage.price * order.warrantyPackage.discount / 100))})` : 'Không có'}</p>
-                    <p class="text-gray-700 mb-4"><strong>Trạng thái bảo hành:</strong> ${order.warrantyPackage ? (order.warrantyPaymentStatus === 'paid' ? 'Đã thanh toán' : (order.warrantyPaymentStatus === 'pending_admin' ? 'Admin chờ xác nhận' : 'Chờ xác nhận')) : 'N/A'}</p>
+                    <p class="text-gray-700 mb-4"><strong>Trạng thái bảo hành:</strong> ${order.warrantyPackage ? (order.warrantyPaymentStatus === 'paid' ? 'Đã thanh toán' : (order.warrantyPaymentStatus === 'pending_admin' ? 'Đang xác nhận thanh toán' : 'Chưa thanh toán')) : 'Miễn phí đổi trả trong 15 ngày'}</p>
                     <!-- Updated: Display "Thanh toán khi nhận hàng" with the total order amount for all statuses -->
                     <p class="text-red-600 font-bold mb-2">Thanh toán khi nhận hàng: ${formatCurrency(order.totalAmount - order.totalVATCustomerPays)}</p>
 
@@ -1520,10 +1520,9 @@ async function updateOrderStatus(orderId, customerUserId, newStatus) {
     showLoading();
     try {
         const updates = { status: newStatus };
-        if (newStatus === 'shipping') {
-            updates.vatPaymentStatus = 'paid'; // Set VAT status to paid when moving from created to shipping
-            updates.warrantyPaymentStatus = 'paid'; // Set warranty status to paid when moving from created to shipping
-        }
+        // No longer setting VAT/warranty status to paid here, as they have their own payment flows
+        // If an order is approved to shipping, it means VAT and Warranty (if applicable) are handled
+        // For simplicity, we assume they are either paid or not applicable when admin approves.
 
         // Update user's order
         const userOrderRef = doc(db, `artifacts/${appId}/users/${customerUserId}/orders`, orderId);
@@ -1973,11 +1972,15 @@ async function deleteVoucher(code) {
 }
 
 async function renderWarrantyPackagesList() {
+    warrantyPackagesSelection.innerHTML = ''; // Clear previous selections in the modal
     currentWarrantyPackagesList.innerHTML = '';
     if (shopDataCache.warrantyPackages.length === 0) {
         currentWarrantyPackagesList.innerHTML = '<p class="text-gray-500 italic">Chưa có gói bảo hành nào được cấu hình.</p>';
+        warrantyPackagesSelection.innerHTML = '<p class="text-gray-500 italic">Chưa có gói bảo hành nào để chọn.</p>';
         return;
     }
+
+    // Render for management list
     shopDataCache.warrantyPackages.forEach(pkg => {
         const packageDiv = document.createElement('div');
         packageDiv.className = 'flex items-center justify-between bg-gray-100 p-3 rounded-lg shadow-sm';
@@ -1993,6 +1996,34 @@ async function renderWarrantyPackagesList() {
         `;
         currentWarrantyPackagesList.appendChild(packageDiv);
     });
+
+    // Render for selection in payment warranty modal
+    shopDataCache.warrantyPackages.forEach(pkg => {
+        const packageCard = document.createElement('div');
+        packageCard.className = 'warranty-package-card cursor-pointer';
+        packageCard.dataset.packageId = pkg.id;
+        packageCard.innerHTML = `
+            <h4 class="font-semibold text-lg text-gray-900">${pkg.name}</h4>
+            <p class="text-gray-700">Giá gốc: <span class="font-bold">${formatCurrency(pkg.price)}</span></p>
+            ${pkg.discount > 0 ? `<p class="text-green-600">Giảm giá: ${pkg.discount}%</p>` : ''}
+            <p class="text-xl font-bold text-blue-700">Giá cuối: ${formatCurrency(pkg.price - (pkg.price * pkg.discount / 100))}</p>
+        `;
+        warrantyPackagesSelection.appendChild(packageCard);
+
+        packageCard.addEventListener('click', () => {
+            document.querySelectorAll('.warranty-package-card').forEach(card => {
+                card.classList.remove('selected-package');
+            });
+            packageCard.classList.add('selected-package');
+            selectedWarrantyPackage = pkg;
+            const finalPrice = pkg.price - (pkg.price * pkg.discount / 100);
+            warrantyPaymentTotal.textContent = formatCurrency(finalPrice);
+            // Enable payment button if a package is selected
+            confirmWarrantyPaymentBtn.disabled = false;
+            confirmWarrantyPaymentBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        });
+    });
+
 
     document.querySelectorAll('.edit-warranty-package-btn').forEach(button => {
         button.addEventListener('click', (e) => {
@@ -2304,6 +2335,163 @@ adminConfirmVatPaymentBtn.addEventListener('click', async () => {
         hideLoading(); // Ẩn hiệu ứng tải
     }
 });
+
+function displayPaymentWarrantyModal(order) {
+    // Reset selected warranty package
+    selectedWarrantyPackage = null;
+    warrantyPaymentTotal.textContent = formatCurrency(0);
+    confirmWarrantyPaymentBtn.disabled = true; // Disable button until a package is selected
+    confirmWarrantyPaymentBtn.classList.add('opacity-50', 'cursor-not-allowed');
+
+    // Clear previous selections
+    document.querySelectorAll('.warranty-package-card').forEach(card => {
+        card.classList.remove('selected-package');
+    });
+
+    // Display QR Code and bank details
+    qrCodeDisplayWarranty.src = shopDataCache.bankDetails.qrCodeImage || 'https://placehold.co/200x200/cccccc/333333?text=QR+Code';
+    bankNameDisplayWarranty.textContent = shopDataCache.bankDetails.bankName || 'N/A';
+    accountNumberDisplayWarranty.textContent = shopDataCache.bankDetails.accountNumber || 'N/A';
+    accountHolderDisplayWarranty.textContent = shopDataCache.bankDetails.accountHolder || 'N/A';
+
+    // Logic to hide/show buttons based on user role and warranty status
+    if (loggedInUser && loggedInUser.isAdmin) {
+        confirmWarrantyPaymentBtn.classList.add('hidden'); // Hide user button for admin
+        adminConfirmWarrantyBtn.classList.remove('hidden'); // Show admin button
+    } else {
+        confirmWarrantyPaymentBtn.classList.remove('hidden'); // Show user button for regular user
+        adminConfirmWarrantyBtn.classList.add('hidden'); // Hide admin button
+    }
+
+    // Disable user's confirm button if warranty is already paid or pending admin confirmation
+    if (order.warrantyPaymentStatus === 'paid' || order.warrantyPaymentStatus === 'pending_admin') {
+        confirmWarrantyPaymentBtn.disabled = true;
+        confirmWarrantyPaymentBtn.textContent = 'Đã mua gói bảo hành';
+        confirmWarrantyPaymentBtn.classList.add('opacity-50', 'cursor-not-allowed');
+    } else {
+        confirmWarrantyPaymentBtn.disabled = false;
+        confirmWarrantyPaymentBtn.textContent = 'Xác Nhận Thanh Toán';
+        confirmWarrantyPaymentBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+    }
+
+    // Render warranty packages for selection
+    renderWarrantyPackagesList(); // This function already populates warrantyPackagesSelection
+
+    openModal(paymentWarrantyModal);
+}
+
+confirmWarrantyPaymentBtn.addEventListener('click', async () => {
+    if (!loggedInUser || !loggedInUser.id) {
+        showMessage('Vui lòng đăng nhập để mua gói bảo hành.', 'info');
+        openModal(loginRegisterModal);
+        return;
+    }
+    if (loggedInUser.isAdmin) {
+        showMessage('Admin không cần thực hiện thanh toán này, vui lòng dùng nút "Admin Xác Nhận".', 'info');
+        return;
+    }
+    if (!selectedWarrantyPackage) {
+        showMessage('Vui lòng chọn một gói bảo hành.', 'error');
+        return;
+    }
+
+    showLoading();
+    try {
+        const orderId = currentOrderForWarranty.id;
+        const orderRefUser = doc(db, `artifacts/${appId}/users/${loggedInUser.id}/orders`, orderId);
+        const orderRefAdmin = doc(collection(db, `artifacts/${appId}/public/data/adminOrders`), orderId);
+
+        // Update user's order
+        await updateDoc(orderRefUser, {
+            warrantyPackage: selectedWarrantyPackage,
+            warrantyPaymentStatus: 'pending_admin'
+        });
+        console.log(`Warranty payment for order ${orderId} set to pending_admin for user.`);
+
+        // Update admin's order
+        await updateDoc(orderRefAdmin, {
+            warrantyPackage: selectedWarrantyPackage,
+            warrantyPaymentStatus: 'pending_admin'
+        });
+        console.log(`Warranty payment for order ${orderId} set to pending_admin for admin.`);
+
+        showMessage('Yêu cầu mua gói bảo hành của bạn đang chờ admin xác nhận!', 'info');
+        closeModal(paymentWarrantyModal);
+        renderOrders(currentOrderForWarranty.status);
+    } catch (error) {
+        console.error("Error confirming warranty payment:", error);
+        showMessage(`Lỗi khi xác nhận mua gói bảo hành: ${error.message}`, 'error');
+    } finally {
+        hideLoading();
+    }
+});
+
+adminConfirmWarrantyBtn.addEventListener('click', async () => {
+    if (!loggedInUser || !loggedInUser.isAdmin) {
+        showMessage('Bạn không có quyền xác nhận thanh toán này.', 'error');
+        return;
+    }
+    if (!currentOrderForWarranty) {
+        showMessage('Không có đơn hàng nào được chọn để xác nhận bảo hành.', 'error');
+        return;
+    }
+
+    showLoading();
+    try {
+        const orderId = currentOrderForWarranty.id;
+        const customerUserId = currentOrderForWarranty.userId; // Get the customer's user ID from the order
+        const orderRefUser = doc(db, `artifacts/${appId}/users/${customerUserId}/orders`, orderId);
+        const orderRefAdmin = doc(collection(db, `artifacts/${appId}/public/data/adminOrders`), orderId);
+
+        // Update user's order
+        await updateDoc(orderRefUser, { warrantyPaymentStatus: 'paid' });
+        console.log(`Warranty payment for order ${orderId} set to paid for user.`);
+
+        // Update admin's order
+        await updateDoc(orderRefAdmin, { warrantyPaymentStatus: 'paid' });
+        console.log(`Warranty payment for order ${orderId} set to paid for admin.`);
+
+        showMessage(`Đã xác nhận thanh toán gói bảo hành cho đơn hàng #${orderId}.`, 'success');
+        closeModal(paymentWarrantyModal);
+        renderOrders(currentOrderForWarranty.status);
+    } catch (error) {
+        console.error("Error admin confirming warranty payment:", error);
+        showMessage(`Lỗi khi admin xác nhận thanh toán gói bảo hành: ${error.message}`, 'error');
+    } finally {
+        hideLoading();
+    }
+});
+
+
+function displayOrderTrackingModal(order) {
+    trackingShippingUnitImage.src = shopDataCache.shippingUnit.image || 'https://placehold.co/200x100/cccccc/333333?text=Shipping+Unit';
+    trackingShippingUnitName.textContent = shopDataCache.shippingUnit.name || 'GHN Express';
+    trackingOrderId.textContent = order.id;
+
+    trackingProductDetails.innerHTML = '';
+    order.items.forEach(item => {
+        const itemDiv = document.createElement('div');
+        itemDiv.className = 'flex items-center space-x-2 text-sm mb-1';
+        itemDiv.innerHTML = `
+            <img src="${item.productImage}" onerror="this.onerror=null;this.src='https://placehold.co/40x40/cccccc/333333?text=SP';" class="w-10 h-10 object-cover rounded-md">
+            <span>${item.productName} x ${item.quantity}</span>
+        `;
+        trackingProductDetails.appendChild(itemDiv);
+    });
+
+    trackingCurrentLocation.textContent = order.orderLocation || 'Đang cập nhật...';
+    trackingDestination.textContent = order.customerAddress || 'N/A';
+
+    checkRouteBtn.onclick = () => {
+        const origin = encodeURIComponent(order.orderLocation || DEFAULT_WAREHOUSE_ADDRESS);
+        const destination = encodeURIComponent(order.customerAddress);
+        const googleMapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}`;
+        window.open(googleMapsUrl, '_blank');
+    };
+
+    openModal(orderTrackingModal);
+}
+
 
 // Authentication and User Management
 onAuthStateChanged(auth, async (user) => {

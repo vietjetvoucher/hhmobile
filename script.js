@@ -334,69 +334,76 @@ function showSection(sectionId, clickedButton) {
 async function loadShopData() {
     showLoading();
     try {
-        // Corrected Firestore path for shopData: artifacts/{appId}/public/data/shopSettings/shopData
         const shopDocRef = doc(collection(db, `artifacts/${appId}/public/data/shopSettings`), 'shopData');
-        const shopDocSnap = await getDoc(shopDocRef);
-        if (shopDocSnap.exists()) {
-            shopDataCache = { ...shopDataCache, ...shopDocSnap.data() };
-            console.log("Shop data loaded from Firestore:", shopDataCache);
-        } else {
-            console.log("No shop data found in Firestore. Initializing with default data.");
-            // Initialize with default data if document doesn't exist
-            await setDoc(shopDocRef, shopDataCache);
-            console.log("Default shop data saved to Firestore.");
-        }
 
-        // Check if products array is empty and add a default product if it is
-        if (!shopDataCache.products || shopDataCache.products.length === 0) {
-            const defaultProduct = {
-                id: generateId(),
-                name: 'iPhone 16 Pro Max',
-                basePrice: 30000000,
-                image: 'https://placehold.co/400x300/cccccc/333333?text=iPhone+16+Pro+Max',
-                description: 'iPhone 16 Pro Max là siêu phẩm mới nhất của Apple, với chip A18 Bionic mạnh mẽ, camera cải tiến vượt trội và màn hình ProMotion siêu mượt.',
-                reviewsCount: 500,
-                colors: [
-                    { name: 'Titan Tự Nhiên', priceImpact: 0, display_image: 'https://placehold.co/400x300/8B8B8B/ffffff?text=Titan+Tự+Nhiên' },
-                    { name: 'Titan Xanh', priceImpact: 500000, display_image: 'https://placehold.co/400x300/00008B/ffffff?text=Titan+Xanh' },
-                    { name: 'Titan Trắng', priceImpact: 500000, display_image: 'https://placehold.co/400x300/F0F8FF/333333?text=Titan+Trắng' },
-                    { name: 'Titan Đen', priceImpact: 0, display_image: 'https://placehold.co/400x300/2C3539/ffffff?text=Titan+Đen' }
-                ],
-                storages: [
-                    { name: '256GB', priceImpact: 0 },
-                    { name: '512GB', priceImpact: 3000000 },
-                    { name: '1TB', priceImpact: 7000000 }
-                ],
-                variants: [
-                    { color: 'Titan Tự Nhiên', storage: '256GB', quantity: 100, priceImpact: 0, sold: 20 },
-                    { color: 'Titan Tự Nhiên', storage: '512GB', quantity: 70, priceImpact: 0, sold: 15 },
-                    { color: 'Titan Tự Nhiên', storage: '1TB', quantity: 30, priceImpact: 0, sold: 5 },
-                    { color: 'Titan Xanh', storage: '256GB', quantity: 80, priceImpact: 0, sold: 10 },
-                    { color: 'Titan Xanh', storage: '512GB', quantity: 50, priceImpact: 0, sold: 8 },
-                    { color: 'Titan Xanh', storage: '1TB', quantity: 20, priceImpact: 0, sold: 3 },
-                    { color: 'Titan Trắng', storage: '256GB', quantity: 90, priceImpact: 0, sold: 18 },
-                    { color: 'Titan Trắng', storage: '512GB', quantity: 60, priceImpact: 0, sold: 12 },
-                    { color: 'Titan Trắng', storage: '1TB', quantity: 25, priceImpact: 0, sold: 4 },
-                    { color: 'Titan Đen', storage: '256GB', quantity: 95, priceImpact: 0, sold: 22 },
-                    { color: 'Titan Đen', storage: '512GB', quantity: 65, priceImpact: 0, sold: 10 },
-                    { color: 'Titan Đen', storage: '1TB', quantity: 28, priceImpact: 0, sold: 6 }
-                ]
-            };
-            shopDataCache.products = [defaultProduct];
-            await setDoc(shopDocRef, shopDataCache); // Save the default product to Firestore
-            showMessage('Đã tạo sản phẩm mặc định iPhone 16 Pro Max.', 'info');
-            console.log("Default iPhone 16 Pro Max product added and saved.");
-        }
+        // Set up real-time listener for shop data
+        onSnapshot(shopDocRef, async (shopDocSnap) => {
+            if (shopDocSnap.exists()) {
+                shopDataCache = { ...shopDataCache, ...shopDocSnap.data() };
+                console.log("Shop data loaded from Firestore (real-time):", shopDataCache);
+            } else {
+                console.log("No shop data found in Firestore. Initializing with default data.");
+                // Initialize with default data if document doesn't exist
+                await setDoc(shopDocRef, shopDataCache);
+                console.log("Default shop data saved to Firestore.");
+            }
 
-        loadShopSettingsToUI();
-        renderProducts();
-        renderProductManagementList();
-        renderVouchersList();
-        renderWarrantyPackagesList();
+            // Check if products array is empty and add a default product if it is
+            if (!shopDataCache.products || shopDataCache.products.length === 0) {
+                const defaultProduct = {
+                    id: generateId(),
+                    name: 'iPhone 16 Pro Max',
+                    basePrice: 30000000,
+                    image: 'https://placehold.co/400x300/cccccc/333333?text=iPhone+16+Pro+Max',
+                    description: 'iPhone 16 Pro Max là siêu phẩm mới nhất của Apple, với chip A18 Bionic mạnh mẽ, camera cải tiến vượt trội và màn hình ProMotion siêu mượt.',
+                    reviewsCount: 500,
+                    colors: [
+                        { name: 'Titan Tự Nhiên', priceImpact: 0, display_image: 'https://placehold.co/400x300/8B8B8B/ffffff?text=Titan+Tự+Nhiên' },
+                        { name: 'Titan Xanh', priceImpact: 500000, display_image: 'https://placehold.co/400x300/00008B/ffffff?text=Titan+Xanh' },
+                        { name: 'Titan Trắng', priceImpact: 500000, display_image: 'https://placehold.co/400x300/F0F8FF/333333?text=Titan+Trắng' },
+                        { name: 'Titan Đen', priceImpact: 0, display_image: 'https://placehold.co/400x300/2C3539/ffffff?text=Titan+Đen' }
+                    ],
+                    storages: [
+                        { name: '256GB', priceImpact: 0 },
+                        { name: '512GB', priceImpact: 3000000 },
+                        { name: '1TB', priceImpact: 7000000 }
+                    ],
+                    variants: [
+                        { color: 'Titan Tự Nhiên', storage: '256GB', quantity: 100, priceImpact: 0, sold: 20 },
+                        { color: 'Titan Tự Nhiên', storage: '512GB', quantity: 70, priceImpact: 0, sold: 15 },
+                        { color: 'Titan Tự Nhiên', storage: '1TB', quantity: 30, priceImpact: 0, sold: 5 },
+                        { color: 'Titan Xanh', storage: '256GB', quantity: 80, priceImpact: 0, sold: 10 },
+                        { color: 'Titan Xanh', storage: '512GB', quantity: 50, priceImpact: 0, sold: 8 },
+                        { color: 'Titan Xanh', storage: '1TB', quantity: 20, priceImpact: 0, sold: 3 },
+                        { color: 'Titan Trắng', storage: '256GB', quantity: 90, priceImpact: 0, sold: 18 },
+                        { color: 'Titan Trắng', storage: '512GB', quantity: 60, priceImpact: 0, sold: 12 },
+                        { color: 'Titan Trắng', storage: '1TB', quantity: 25, priceImpact: 0, sold: 4 },
+                        { color: 'Titan Đen', storage: '256GB', quantity: 95, priceImpact: 0, sold: 22 },
+                        { color: 'Titan Đen', storage: '512GB', quantity: 65, priceImpact: 0, sold: 10 },
+                        { color: 'Titan Đen', storage: '1TB', quantity: 28, priceImpact: 0, sold: 6 }
+                    ]
+                };
+                shopDataCache.products = [defaultProduct];
+                await setDoc(shopDocRef, shopDataCache); // Save the default product to Firestore
+                showMessage('Đã tạo sản phẩm mặc định iPhone 16 Pro Max.', 'info');
+                console.log("Default iPhone 16 Pro Max product added and saved.");
+            }
+
+            loadShopSettingsToUI();
+            renderProducts();
+            renderProductManagementList();
+            renderVouchersList(); // This will be called automatically on data change
+            renderWarrantyPackagesList();
+            hideLoading(); // Hide loading after initial data load and UI update
+        }, (error) => {
+            console.error("Error loading shop data with onSnapshot:", error);
+            showMessage(`Lỗi tải dữ liệu cửa hàng: ${error.message}`, 'error');
+            hideLoading();
+        });
+
     } catch (error) {
-        console.error("Error loading shop data:", error);
-        showMessage(`Lỗi tải dữ liệu cửa hàng: ${error.message}`, 'error');
-    } finally {
+        console.error("Error setting up shop data listener:", error);
+        showMessage(`Lỗi thiết lập lắng nghe dữ liệu cửa hàng: ${error.message}`, 'error');
         hideLoading();
     }
 }
@@ -564,7 +571,7 @@ openManagementModalBtn.addEventListener('click', () => {
     }
     openModal(shopManagementModal);
     renderProductManagementList();
-    renderVouchersList();
+    // renderVouchersList(); // Removed, handled by onSnapshot
     renderWarrantyPackagesList();
     resetAddEditProductForm();
     resetAddEditWarrantyPackageForm();
@@ -1944,7 +1951,7 @@ addVoucherForm.addEventListener('submit', async (e) => {
 
     shopDataCache.vouchers[code] = value;
     await saveShopData();
-    renderVouchersList();
+    // renderVouchersList(); // Removed, handled by onSnapshot
     newVoucherCodeInput.value = '';
     newVoucherValueInput.value = '';
     hideLoading();
@@ -1955,7 +1962,7 @@ async function deleteVoucher(code) {
     try {
         delete shopDataCache.vouchers[code];
         await saveShopData();
-        renderVouchersList();
+        // renderVouchersList(); // Removed, handled by onSnapshot
         console.log(`Voucher ${code} deleted.`);
     } catch (error) {
         console.error("Error deleting voucher:", error);

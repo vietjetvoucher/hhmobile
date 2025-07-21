@@ -1263,9 +1263,9 @@ function debounce(func, delay) {
 }
 
 // Debounced versions of renderOrders for search inputs
-const debouncedRenderCreatedOrders = debounce(() => renderOrders('created'), 1000);
-const debouncedRenderShippingOrders = debounce(() => renderOrders('shipping'), 1000);
-const debouncedRenderDeliveredOrders = debounce(() => renderOrders('delivered'), 1000);
+const debouncedRenderCreatedOrders = debounce(() => renderOrders('created'), 2000);
+const debouncedRenderShippingOrders = debounce(() => renderOrders('shipping'), 2000);
+const debouncedRenderDeliveredOrders = debounce(() => renderOrders('delivered'), 2000);
 
 async function renderOrders(status) {
     const orderListElement = document.getElementById(`${status}-orders-list`);

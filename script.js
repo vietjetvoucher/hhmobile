@@ -1,4 +1,4 @@
-﻿import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import { getAuth, signInWithCustomToken, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc, onSnapshot, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
@@ -268,6 +268,14 @@ const profilePhoneInput = document.getElementById('profile-phone');
 const profileProvinceInput = document.getElementById('profile-province');
 const saveProfileBtn = document.getElementById('save-profile-btn');
 const profileErrorMessage = document.getElementById('profile-error-message');
+
+// Search inputs for order sections
+const searchCreatedOrdersInput = document.getElementById('search-created-orders');
+const clearSearchCreatedOrdersBtn = document.getElementById('clear-search-created-orders');
+const searchShippingOrdersInput = document.getElementById('search-shipping-orders');
+const clearSearchShippingOrdersBtn = document.getElementById('clear-search-shipping-orders');
+const searchDeliveredOrdersInput = document.getElementById('search-delivered-orders');
+const clearSearchDeliveredOrdersBtn = document.getElementById('clear-search-delivered-orders');
 
 
 let currentSelectedProduct = null;
@@ -1230,6 +1238,7 @@ orderForm.addEventListener('submit', async (e) => {
         hideLoading();
         showMessage('Đơn hàng đã được tạo thành công!', 'success');
         closeModal(orderCreationModal);
+        closeModal(productDetailModal); // Close product detail modal after successful order creation
         renderOrders('created');
     } catch (error) {
         hideLoading();
@@ -1240,6 +1249,7 @@ orderForm.addEventListener('submit', async (e) => {
 
 async function renderOrders(status) {
     const orderListElement = document.getElementById(`${status}-orders-list`);
+    const searchInput = document.getElementById(`search-${status}-orders`);
     orderListElement.innerHTML = '<p class="text-gray-500 italic text-center">Đang tải đơn hàng...</p>';
     showLoading();
 
@@ -1264,11 +1274,17 @@ async function renderOrders(status) {
             return;
         }
 
+        const searchTerm = searchInput.value.toLowerCase().trim();
+        const filteredOrders = orders.filter(order =>
+            order.customerName.toLowerCase().includes(searchTerm) ||
+            order.customerPhone.includes(searchTerm)
+        );
+
         orderListElement.innerHTML = '';
-        if (orders.length === 0) {
+        if (filteredOrders.length === 0) {
             orderListElement.innerHTML = '<p class="text-gray-500 italic text-center">Chưa có đơn hàng nào trong mục này.</p>';
         } else {
-            orders.forEach(order => {
+            filteredOrders.forEach(order => {
                 const orderCard = document.createElement('div');
                 // Changed bg-white to bg-transparent
                 orderCard.className = 'bg-transparent rounded-xl shadow-lg p-6 mb-4';
@@ -1303,9 +1319,9 @@ async function renderOrders(status) {
                     <button class="toggle-order-details-btn text-blue-600 hover:underline text-sm mt-2">Xem chi tiết sản phẩm</button>
                     <div class="mt-4 flex flex-wrap gap-2">
                         ${loggedInUser && loggedInUser.isAdmin ? `
-                            ${status === 'created' ? `<button class="admin-approve-btn bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition-all duration-200" data-order-id="${order.id}" data-customer-user-id="${order.userId}" data-target-status="shipping">Phê duyệt (Vận chuyển)</button>` : ''}
+                            ${status === 'created' ? `<button class="admin-approve-btn bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition-all duration-200" data-order-id="${order.id}" data-customer-user-id="${order.userId}">Phê duyệt (Vận chuyển)</button>` : ''}
                             ${status === 'shipping' ? `
-                                <button class="admin-approve-btn bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition-all duration-200" data-order-id="${order.id}" data-customer-user-id="${order.userId}" data-target-status="delivered">Phê duyệt (Đã giao)</button>
+                                <button class="admin-approve-btn bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition-all duration-200" data-order-id="${order.id}" data-customer-user-id="${order.userId}">Phê duyệt (Đã giao)</button>
                                 <button class="admin-edit-shipping-btn bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition-all duration-200" data-order-id="${order.id}">Chi tiết vận chuyển</button>
                             ` : ''}
                             <button class="admin-cancel-btn bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg transition-all duration-200" data-order-id="${order.id}" data-customer-user-id="${order.userId}">Hủy</button>
@@ -1366,7 +1382,7 @@ async function renderOrders(status) {
                 button.addEventListener('click', async (e) => {
                     const orderId = e.target.dataset.orderId;
                     const customerUserId = e.target.dataset.customerUserId;
-                    const targetStatus = e.target.dataset.targetStatus;
+                    const targetStatus = (status === 'created' ? 'shipping' : (status === 'shipping' ? 'delivered' : status));
                     await updateOrderStatus(orderId, customerUserId, targetStatus);
                 });
             });
@@ -1452,6 +1468,26 @@ async function renderOrders(status) {
         hideLoading();
     }
 }
+
+// Event listeners for order search inputs
+searchCreatedOrdersInput.addEventListener('input', () => renderOrders('created'));
+clearSearchCreatedOrdersBtn.addEventListener('click', () => {
+    searchCreatedOrdersInput.value = '';
+    renderOrders('created');
+});
+
+searchShippingOrdersInput.addEventListener('input', () => renderOrders('shipping'));
+clearSearchShippingOrdersBtn.addEventListener('click', () => {
+    searchShippingOrdersInput.value = '';
+    renderOrders('shipping');
+});
+
+searchDeliveredOrdersInput.addEventListener('input', () => renderOrders('delivered'));
+clearSearchDeliveredOrdersBtn.addEventListener('click', () => {
+    searchDeliveredOrdersInput.value = '';
+    renderOrders('delivered');
+});
+
 
 async function updateOrderStatus(orderId, customerUserId, newStatus) {
     showLoading();
@@ -2101,43 +2137,43 @@ async function generateShopReport() {
 generateReportBtn.addEventListener('click', generateShopReport);
 
 function displayPaymentVATModal(order) {
+    // Cập nhật thông tin QR Code và ngân hàng
     qrCodeDisplay.src = shopDataCache.bankDetails.qrCodeImage || 'https://placehold.co/200x200/cccccc/333333?text=QR+Code';
     bankNameDisplay.textContent = shopDataCache.bankDetails.bankName || 'N/A';
     accountNumberDisplay.textContent = shopDataCache.bankDetails.accountNumber || 'N/A';
     accountHolderDisplay.textContent = shopDataCache.bankDetails.accountHolder || 'N/A';
 
-    // Display values from the order object
+    // Hiển thị các giá trị VAT từ đối tượng đơn hàng
     vatBaseAmountDisplay.textContent = formatCurrency(order.totalOriginalProductPrice); // Giá đơn hàng (chưa VAT)
-    
-    // Shop hỗ trợ thanh toán (8% của tổng giá gốc)
-    const shopSupportAmount = order.totalOriginalProductPrice * 0.08; 
-    console.log("Order totalOriginalProductPrice:", order.totalOriginalProductPrice);
-    console.log("Calculated shopSupportAmount (8%):", shopSupportAmount);
-    if (shopSupportVatDisplay) { 
+
+    // Tính toán và hiển thị số tiền shop hỗ trợ (8% của tổng giá gốc sản phẩm)
+    const shopSupportAmount = order.totalOriginalProductPrice * 0.08;
+    if (shopSupportVatDisplay) {
         shopSupportVatDisplay.textContent = formatCurrency(shopSupportAmount);
-        console.log("shopSupportVatDisplay element found and updated.");
-    } else {
-        console.error("shopSupportVatDisplay element not found!");
     }
 
-    // Tổng tiền VAT (10% của tổng giá gốc)
+    // Tính toán và hiển thị tổng tiền VAT (10% của tổng giá gốc sản phẩm)
     const totalVATOriginalAmount = order.totalOriginalProductPrice * 0.10;
-    console.log("Calculated totalVATOriginalAmount (10%):", totalVATOriginalAmount);
-    if (totalVatOriginalDisplay) { 
+    if (totalVatOriginalDisplay) {
         totalVatOriginalDisplay.textContent = formatCurrency(totalVATOriginalAmount);
-    } else {
-        console.error("totalVatOriginalDisplay element not found!");
     }
 
-    // Khách hàng thanh toán (2% của tổng giá gốc)
+    // Tính toán và hiển thị số tiền VAT khách hàng cần thanh toán (2% của tổng giá gốc sản phẩm)
     const customerPaysAmount = order.totalOriginalProductPrice * 0.02;
-    console.log("Calculated customerPaysAmount (2%):", customerPaysAmount);
-    paymentModalVATTotal.textContent = formatCurrency(customerPaysAmount); 
+    paymentModalVATTotal.textContent = formatCurrency(customerPaysAmount);
 
+    // Đặt giá trị mặc định cho ô nhập số tiền khách hàng cần thanh toán
     paymentAmountInput.value = customerPaysAmount;
     amountPaidDisplay.textContent = formatCurrency(0);
     remainingPaymentDisplay.textContent = formatCurrency(customerPaysAmount);
 
+    // Vô hiệu hóa ô nhập số tiền khách hàng cần thanh toán ngay lập tức
+    // Khách hàng không được phép thay đổi giá trị này.
+    paymentAmountInput.disabled = true;
+
+    // Cập nhật hiển thị số tiền đã trả và còn lại khi người dùng nhập
+    // Lưu ý: oninput listener vẫn được giữ lại nhưng sẽ không có tác dụng
+    // nếu paymentAmountInput.disabled là true. Nó chỉ hoạt động nếu disabled là false.
     paymentAmountInput.oninput = () => {
         const paidAmount = parseFloat(paymentAmountInput.value) || 0;
         const remaining = customerPaysAmount - paidAmount;
@@ -2146,36 +2182,53 @@ function displayPaymentVATModal(order) {
         remainingPaymentDisplay.style.color = remaining <= 0 ? '#28a745' : '#e53e3e';
     };
 
-    if (loggedInUser && loggedInUser.isAdmin) { // Added null check for loggedInUser
-        confirmPaymentBtn.classList.add('hidden');
-        adminConfirmVatPaymentBtn.classList.remove('hidden');
+    // Logic để vô hiệu hóa nút "Thanh Toán" chỉ khi đơn hàng đã chuyển trạng thái VAT
+    // Nút sẽ bị vô hiệu hóa nếu vatPaymentStatus là 'pending_admin' hoặc 'paid'.
+    // Nếu là 'pending' (chờ xác nhận thanh toán ban đầu), nút sẽ hoạt động.
+    if (order.vatPaymentStatus === 'pending_admin' || order.vatPaymentStatus === 'paid') {
+        confirmPaymentBtn.disabled = true; // Vô hiệu hóa nút thanh toán
+        confirmPaymentBtn.textContent = 'Đang chờ xác nhận...'; // Thay đổi văn bản nút
+        confirmPaymentBtn.classList.add('opacity-50', 'cursor-not-allowed'); // Thêm hiệu ứng CSS vô hiệu hóa
     } else {
-        confirmPaymentBtn.classList.remove('hidden');
-        adminConfirmVatPaymentBtn.classList.add('hidden');
+        confirmPaymentBtn.disabled = false; // Kích hoạt nút thanh toán
+        confirmPaymentBtn.textContent = 'Thanh Toán'; // Đặt lại văn bản nút
+        confirmPaymentBtn.classList.remove('opacity-50', 'cursor-not-allowed'); // Xóa hiệu ứng CSS vô hiệu hóa
     }
 
-    openModal(paymentVATModal);
+    // Logic hiển thị nút cho Admin hoặc người dùng thông thường
+    if (loggedInUser && loggedInUser.isAdmin) {
+        confirmPaymentBtn.classList.add('hidden'); // Ẩn nút "Thanh Toán" cho Admin
+        adminConfirmVatPaymentBtn.classList.remove('hidden'); // Hiển thị nút "Admin Xác Nhận"
+    } else {
+        confirmPaymentBtn.classList.remove('hidden'); // Hiển thị nút "Thanh Toán" cho người dùng
+        adminConfirmVatPaymentBtn.classList.add('hidden'); // Ẩn nút "Admin Xác Nhận"
+    }
+
+    openModal(paymentVATModal); // Mở modal thanh toán VAT
 }
 
+// Xử lý sự kiện khi người dùng nhấn nút "Thanh Toán"
 confirmPaymentBtn.addEventListener('click', async () => {
-    if (!loggedInUser || !loggedInUser.id) { // Check if user is truly not logged in (id is null for guest)
+    // Kiểm tra trạng thái đăng nhập của người dùng
+    if (!loggedInUser || !loggedInUser.id) {
         showMessage('Vui lòng đăng nhập để thanh toán.', 'info');
-        openModal(loginRegisterModal); // Show login modal
+        openModal(loginRegisterModal);
         return;
     }
-    if (loggedInUser && loggedInUser.isAdmin) { // Added null check for loggedInUser
+    // Ngăn Admin sử dụng nút này (chỉ dành cho người dùng thông thường)
+    if (loggedInUser && loggedInUser.isAdmin) {
         showMessage('Admin không cần thực hiện thanh toán này, vui lòng dùng nút "Admin Xác Nhận".', 'info');
         return;
     }
-    showLoading();
+    showLoading(); // Hiển thị hiệu ứng tải
     try {
         const orderId = currentOrderForPayment.id;
+        // Cập nhật trạng thái thanh toán VAT của đơn hàng trong bộ sưu tập của người dùng
         const orderRef = doc(db, `artifacts/${appId}/users/${loggedInUser.id}/orders`, orderId);
         await updateDoc(orderRef, { vatPaymentStatus: 'pending_admin' });
         console.log(`VAT payment for order ${orderId} set to pending_admin for user.`);
 
-        // Admin's order also needs to be updated if it exists
-        // Corrected Firestore path for adminOrders
+        // Cập nhật trạng thái thanh toán VAT của đơn hàng trong bộ sưu tập công khai của Admin (nếu tồn tại)
         const adminOrderRef = doc(collection(db, `artifacts/${appId}/public/data/adminOrders`), orderId);
         const adminOrderSnap = await getDoc(adminOrderRef);
         if (adminOrderSnap.exists()) {
@@ -2183,194 +2236,45 @@ confirmPaymentBtn.addEventListener('click', async () => {
             console.log(`VAT payment for order ${orderId} set to pending_admin for admin.`);
         }
 
-
         showMessage('Yêu cầu thanh toán VAT của bạn đang chờ admin xác nhận!', 'info');
-        closeModal(paymentVATModal);
-        renderOrders(currentOrderForPayment.status);
+        closeModal(paymentVATModal); // Đóng modal
+        renderOrders(currentOrderForPayment.status); // Cập nhật lại danh sách đơn hàng
     } catch (error) {
         console.error("Error confirming VAT payment:", error);
         showMessage(`Lỗi khi xác nhận thanh toán VAT: ${error.message}`, 'error');
     } finally {
-        hideLoading();
+        hideLoading(); // Ẩn hiệu ứng tải
     }
 });
 
+// Xử lý sự kiện khi Admin nhấn nút "Admin Xác Nhận"
 adminConfirmVatPaymentBtn.addEventListener('click', async () => {
-    if (!loggedInUser || !loggedInUser.isAdmin) { // Added null check for loggedInUser
+    // Kiểm tra quyền Admin
+    if (!loggedInUser || !loggedInUser.isAdmin) {
         showMessage('Bạn không có quyền xác nhận thanh toán này.', 'error');
         return;
     }
-    showLoading();
+    showLoading(); // Hiển thị hiệu ứng tải
     try {
         const orderId = currentOrderForPayment.id;
-        // Update user's order
+        // Cập nhật trạng thái thanh toán VAT của đơn hàng trong bộ sưu tập của người dùng
         const orderRef = doc(db, `artifacts/${appId}/users/${currentOrderForPayment.userId}/orders`, orderId);
         await updateDoc(orderRef, { vatPaymentStatus: 'paid' });
         console.log(`VAT payment for order ${orderId} set to paid for user.`);
 
-        // Update admin's order
-        // Corrected Firestore path for adminOrders
+        // Cập nhật trạng thái thanh toán VAT của đơn hàng trong bộ sưu tập công khai của Admin
         const adminOrderRef = doc(collection(db, `artifacts/${appId}/public/data/adminOrders`), orderId);
         await updateDoc(adminOrderRef, { vatPaymentStatus: 'paid' });
         console.log(`VAT payment for order ${orderId} set to paid for admin.`);
 
         showMessage(`Đã xác nhận thanh toán VAT cho đơn hàng #${orderId}.`, 'success');
-        closeModal(paymentVATModal);
-        renderOrders(currentOrderForPayment.status);
+        closeModal(paymentVATModal); // Đóng modal
+        renderOrders(currentOrderForPayment.status); // Cập nhật lại danh sách đơn hàng
     } catch (error) {
         console.error("Error admin confirming VAT payment:", error);
         showMessage(`Lỗi khi admin xác nhận thanh toán VAT: ${error.message}`, 'error');
     } finally {
-        hideLoading();
-    }
-});
-
-function displayOrderTrackingModal(order) {
-    trackingShippingUnitImage.src = shopDataCache.shippingUnit.image || 'https://placehold.co/200x100/cccccc/333333?text=Shipping+Unit';
-    trackingShippingUnitName.textContent = shopDataCache.shippingUnit.name || 'N/A';
-    trackingOrderId.textContent = order.id;
-    trackingCurrentLocation.textContent = order.orderLocation || 'Đang cập nhật';
-    trackingDestination.textContent = order.customerAddress || 'N/A';
-
-    trackingProductDetails.innerHTML = (order.items || []).map(item => `
-        <div class="flex items-center space-x-2 text-sm">
-            <img src="${item.productImage}" onerror="this.onerror=null;this.src='https://placehold.co/30x30/cccccc/333333?text=SP';" class="w-8 h-8 object-cover rounded-md">
-            <p>${item.productName} x ${item.quantity}</p>
-        </div>
-    `).join('');
-
-    checkRouteBtn.onclick = () => {
-        const shopAddress = shopDataCache.address || DEFAULT_WAREHOUSE_ADDRESS; // Use default if shop address is not set
-        const customerAddress = order.customerAddress;
-        const encodedShopAddress = encodeURIComponent(shopAddress);
-        const encodedCustomerAddress = encodeURIComponent(customerAddress);
-        window.open(`https://www.google.com/maps/dir/?api=1&origin=${encodedShopAddress}&destination=${encodedCustomerAddress}`, '_blank');
-    };
-
-    openModal(orderTrackingModal);
-}
-
-function displayPaymentWarrantyModal(order) {
-    warrantyPackagesSelection.innerHTML = '';
-    selectedWarrantyPackage = null;
-
-    if (shopDataCache.warrantyPackages.length === 0) {
-        warrantyPackagesSelection.innerHTML = '<p class="text-gray-500 italic">Chưa có gói bảo hành nào được cấu hình.</p>';
-        confirmWarrantyPaymentBtn.disabled = true;
-    } else {
-        shopDataCache.warrantyPackages.forEach(pkg => {
-            const finalPrice = pkg.price - (pkg.price * pkg.discount / 100);
-            const packageCard = document.createElement('div');
-            packageCard.className = 'warranty-package-card cursor-pointer';
-            packageCard.dataset.packageId = pkg.id;
-            packageCard.innerHTML = `
-                <h4 class="font-bold text-lg text-gray-900">${pkg.name}</h4>
-                <p class="text-gray-700">Giá gốc: <span class="line-through">${formatCurrency(pkg.price)}</span></p>
-                <p class="text-green-600 font-bold text-xl">Giá ưu đãi: ${formatCurrency(finalPrice)} (${pkg.discount}% off)</p>
-            `;
-            warrantyPackagesSelection.appendChild(packageCard);
-
-            packageCard.addEventListener('click', () => {
-                document.querySelectorAll('.warranty-package-card').forEach(card => card.classList.remove('selected-package'));
-                packageCard.classList.add('selected-package');
-                selectedWarrantyPackage = pkg;
-                warrantyPaymentTotal.textContent = formatCurrency(finalPrice);
-                confirmWarrantyPaymentBtn.disabled = false;
-            });
-        });
-        confirmWarrantyPaymentBtn.disabled = true;
-    }
-
-    qrCodeDisplayWarranty.src = shopDataCache.bankDetails.qrCodeImage || 'https://placehold.co/200x200/cccccc/333333?text=QR+Code';
-    bankNameDisplayWarranty.textContent = shopDataCache.bankDetails.bankName || 'N/A';
-    accountNumberDisplayWarranty.textContent = shopDataCache.bankDetails.accountNumber || 'N/A';
-    accountHolderDisplayWarranty.textContent = shopDataCache.bankDetails.accountHolder || 'N/A';
-    warrantyPaymentTotal.textContent = formatCurrency(0);
-
-    if (loggedInUser && loggedInUser.isAdmin) { // Added null check for loggedInUser
-        confirmWarrantyPaymentBtn.classList.add('hidden');
-        adminConfirmWarrantyBtn.classList.remove('hidden');
-    } else {
-        confirmWarrantyPaymentBtn.classList.remove('hidden');
-        adminConfirmWarrantyBtn.classList.add('hidden');
-    }
-
-    openModal(paymentWarrantyModal);
-}
-
-confirmWarrantyPaymentBtn.addEventListener('click', async () => {
-    if (!loggedInUser || !loggedInUser.id) { // Check if user is truly not logged in (id is null for guest)
-        showMessage('Vui lòng đăng nhập để thanh toán.', 'info');
-        openModal(loginRegisterModal); // Show login modal
-        return;
-    }
-    if (loggedInUser && loggedInUser.isAdmin) { // Added null check for loggedInUser
-        showMessage('Admin không cần thực hiện thanh toán này, vui lòng dùng nút "Admin Xác Nhận".', 'info');
-        return;
-    }
-    if (!selectedWarrantyPackage) {
-        showMessage('Vui lòng chọn một gói bảo hành.', 'error');
-        return;
-    }
-    showLoading();
-    try {
-        const orderId = currentOrderForWarranty.id;
-        const orderRef = doc(db, `artifacts/${appId}/users/${loggedInUser.id}/orders`, orderId);
-        await updateDoc(orderRef, {
-            warrantyPackage: selectedWarrantyPackage,
-            warrantyPaymentStatus: 'pending_admin'
-        });
-        console.log(`Warranty package for order ${orderId} set to pending_admin for user.`);
-
-        // Corrected Firestore path for adminOrders
-        const adminOrderRef = doc(collection(db, `artifacts/${appId}/public/data/adminOrders`), orderId);
-        const adminOrderSnap = await getDoc(adminOrderRef);
-        if (adminOrderSnap.exists()) {
-            await updateDoc(adminOrderRef, {
-                warrantyPackage: selectedWarrantyPackage,
-                warrantyPaymentStatus: 'pending_admin'
-            });
-            console.log(`Warranty package for order ${orderId} set to pending_admin for admin.`);
-        }
-
-        showMessage(`Yêu cầu mua gói bảo hành "${selectedWarrantyPackage.name}" cho đơn hàng #${orderId} đang chờ admin xác nhận.`, 'info');
-        closeModal(paymentWarrantyModal);
-        renderOrders(currentOrderForWarranty.status);
-    } catch (error) {
-        console.error("Error adding warranty package:", error);
-        showMessage(`Lỗi khi thêm gói bảo hành: ${error.message}`, 'error');
-    } finally {
-        hideLoading();
-    }
-});
-
-adminConfirmWarrantyBtn.addEventListener('click', async () => {
-    if (!loggedInUser || !loggedInUser.isAdmin) { // Added null check for loggedInUser
-        showMessage('Bạn không có quyền xác nhận thanh toán này.', 'error');
-        return;
-    }
-    showLoading();
-    try {
-        const orderId = currentOrderForWarranty.id;
-        // Update user's order
-        const orderRef = doc(db, `artifacts/${appId}/users/${currentOrderForWarranty.userId}/orders`, orderId);
-        await updateDoc(orderRef, { warrantyPaymentStatus: 'paid' });
-        console.log(`Warranty package for order ${orderId} set to paid for user.`);
-
-        // Update admin's order
-        // Corrected Firestore path for adminOrders
-        const adminOrderRef = doc(collection(db, `artifacts/${appId}/public/data/adminOrders`), orderId);
-        await updateDoc(adminOrderRef, { warrantyPaymentStatus: 'paid' });
-        console.log(`Warranty package for order ${orderId} set to paid for admin.`);
-
-        showMessage(`Đã xác nhận gói bảo hành cho đơn hàng #${currentOrderForWarranty.id}.`, 'success');
-        closeModal(paymentWarrantyModal);
-        renderOrders(currentOrderForWarranty.status);
-    } catch (error) {
-        console.error("Error admin confirming warranty:", error);
-        showMessage(`Lỗi khi admin xác nhận gói bảo hành: ${error.message}`, 'error');
-    } finally {
-        hideLoading();
+        hideLoading(); // Ẩn hiệu ứng tải
     }
 });
 

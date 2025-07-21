@@ -1329,7 +1329,7 @@ async function renderOrders(status) {
                     <p class="text-gray-700 mb-2"><strong>VAT (Khách trả):</strong> ${formatCurrency(order.totalVATCustomerPays)} (${order.vatPaymentStatus === 'paid' ? 'Đã thanh toán' : (order.vatPaymentStatus === 'pending_admin' ? 'Đang xác nhận thanh toán' : 'Chưa thanh toán')})</p>
                     <p class="text-gray-700 mb-2"><strong>VAT (Shop hỗ trợ):</strong> ${formatCurrency(order.totalShopSupportVAT)}</p>
                     <p class="text-gray-700 mb-2"><strong>Gói bảo hành:</strong> ${order.warrantyPackage ? `${order.warrantyPackage.name} (${formatCurrency(order.warrantyPackage.price - (order.warrantyPackage.price * order.warrantyPackage.discount / 100))})` : 'Không có'}</p>
-                    <p class="text-gray-700 mb-4"><strong>Trạng thái bảo hành:</strong> ${order.warrantyPackage ? (order.warrantyPaymentStatus === 'paid' ? 'Đã thanh toán' : (order.warrantyPaymentStatus === 'pending_admin' ? 'Đang xác nhận thanh toán' : 'Chờ xác nhận')) : 'Miễn phí đổi trả trogn 15 ngày'}</p>
+                    <p class="text-gray-700 mb-4"><strong>Trạng thái bảo hành:</strong> ${order.warrantyPackage ? (order.warrantyPaymentStatus === 'paid' ? 'Đã thanh toán' : (order.warrantyPaymentStatus === 'pending_admin' ? 'Đang xác nhận thanh toán' : 'Chờ xác nhận')) : 'Miễn phí đổi trả trong 30 ngày'}</p>
                     <!-- Updated: Display "Thanh toán khi nhận hàng" with the total order amount for all statuses -->
                     <p class="text-red-600 font-bold mb-2">Thanh toán khi nhận hàng: ${formatCurrency(order.totalAmount - order.totalVATCustomerPays)}</p>
 
@@ -2680,7 +2680,7 @@ loginSubmitBtn.addEventListener('click', async () => {
         await signInWithEmailAndPassword(auth, email, password);
         showMessage('Đăng nhập thành công!', 'success');
         loginErrorMessage.classList.add('hidden');
-        closeModal(loginRegisterModal);
+        closeModal(loginRegisterModal); // Đóng modal đăng nhập sau khi đăng nhập thành công
     } catch (error) {
         console.error("Error during login:", error);
         loginErrorMessage.textContent = `Lỗi đăng nhập: ${error.message}`;

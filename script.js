@@ -25,8 +25,7 @@ const auth = getAuth(app);
 
 let loggedInUser = null;
 let currentUserId = null;
-// Updated: Use an array for multiple admin emails
-const ADMIN_EMAILS = ['dimensiongsv@gmail.com', 'hhmobile.admin@gmail.com']; 
+const ADMIN_EMAIL = 'dimensiongsv@gmail.com'; // Ensure this matches your admin email
 const DEFAULT_WAREHOUSE_ADDRESS = "194 Đ. Lê Duẩn, Khâm Thiên, Đống Đa, Hà Nội";
 
 let shopDataCache = {
@@ -257,8 +256,8 @@ const registerUsernameInput = document.getElementById('register-username');
 const registerPasswordInput = document.getElementById('register-password');
 const registerConfirmPasswordInput = document.getElementById('register-confirm-password');
 const registerFullnameInput = document.getElementById('register-fullname');
-const registerPhoneInput = document.getElementById('register-phone');
-const registerProvinceInput = document.getElementById('register-province'); // Corrected this line
+const registerPhoneInput = document.getElementById('register-phone'); // Corrected this line
+const registerProvinceInput = document.getElementById('register-province');
 const registerSubmitBtn = document.getElementById('register-submit-btn');
 const registerErrorMessage = document.getElementById('register-error-message');
 
@@ -1515,9 +1514,10 @@ async function renderOrders(status) {
 }
 
 // Event listeners for order search inputs using debounced functions
-const debouncedRenderCreatedOrders = debounce(() => renderOrders('created'), 1500);
-const debouncedRenderShippingOrders = debounce(() => renderOrders('shipping'), 1500);
-const debouncedRenderDeliveredOrders = debounce(() => renderOrders('delivered'), 1500);
+// Removed duplicated const declarations
+// const debouncedRenderCreatedOrders = debounce(() => renderOrders('created'), 1500);
+// const debouncedRenderShippingOrders = debounce(() => renderOrders('shipping'), 1500);
+// const debouncedRenderDeliveredOrders = debounce(() => renderOrders('delivered'), 1500);
 
 searchCreatedOrdersInput.addEventListener('input', debouncedRenderCreatedOrders);
 clearSearchCreatedOrdersBtn.addEventListener('click', () => {
@@ -2523,13 +2523,12 @@ onAuthStateChanged(auth, async (user) => {
             const userDocSnap = await getDoc(userProfileDocRef);
             if (userDocSnap.exists()) {
                 loggedInUser = { id: currentUserId, ...userDocSnap.data() };
-                // Updated: Check if user's email is in the ADMIN_EMAILS array
-                loggedInUser.isAdmin = ADMIN_EMAILS.includes(loggedInUser.email);
+                // Ensure isAdmin is explicitly set based on email, even if not in Firestore doc
+                loggedInUser.isAdmin = (loggedInUser.email === ADMIN_EMAIL);
                 console.log("Logged in user data:", loggedInUser);
             } else {
                 // If user profile doesn't exist, create a basic one
-                // Updated: Check if user's email is in the ADMIN_EMAILS array
-                const isUserAdmin = ADMIN_EMAILS.includes(user.email);
+                const isUserAdmin = (user.email === ADMIN_EMAIL);
                 loggedInUser = {
                     id: currentUserId,
                     username: user.email || `guest_${currentUserId.substring(0, 8)}`,
@@ -2660,8 +2659,7 @@ registerSubmitBtn.addEventListener('click', async () => {
     try {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
-        // Updated: Check if user's email is in the ADMIN_EMAILS array
-        const isUserAdmin = ADMIN_EMAILS.includes(email);
+        const isUserAdmin = (email === ADMIN_EMAIL);
 
         await setDoc(doc(db, `artifacts/${appId}/users/${user.uid}`), {
             username: email,

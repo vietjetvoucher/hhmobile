@@ -257,7 +257,7 @@ const registerPasswordInput = document.getElementById('register-password');
 const registerConfirmPasswordInput = document.getElementById('register-confirm-password');
 const registerFullnameInput = document.getElementById('register-fullname');
 const registerPhoneInput = document.getElementById('register-phone');
-const registerProvinceInput = document.getElementById('register-province');
+const registerProvinceInput = document = document.getElementById('register-province');
 const registerSubmitBtn = document.getElementById('register-submit-btn');
 const registerErrorMessage = document.getElementById('register-error-message');
 
@@ -316,10 +316,27 @@ function openModal(modalElement) {
 
 function closeModal(modalElement) {
     modalElement.classList.remove('active');
-    modalElement.addEventListener('transitionend', () => {
+    // Add a fallback timeout in case transitionend doesn't fire
+    const transitionDuration = parseFloat(getComputedStyle(modalElement).transitionDuration) * 1000;
+    
+    let transitionEndFired = false;
+    const onTransitionEnd = () => {
+        transitionEndFired = true;
         modalElement.classList.add('hidden');
         document.body.classList.remove('overflow-hidden');
-    }, { once: true });
+        modalElement.removeEventListener('transitionend', onTransitionEnd);
+    };
+
+    modalElement.addEventListener('transitionend', onTransitionEnd);
+
+    // Fallback: Ensure modal is hidden and overflow is removed after a short delay
+    setTimeout(() => {
+        if (!transitionEndFired) {
+            modalElement.classList.add('hidden');
+            document.body.classList.remove('overflow-hidden');
+            modalElement.removeEventListener('transitionend', onTransitionEnd); // Clean up listener
+        }
+    }, transitionDuration + 100); // Add a small buffer to the transition duration
 }
 
 function showSection(sectionId, clickedButton) {
@@ -1497,6 +1514,10 @@ async function renderOrders(status) {
 }
 
 // Event listeners for order search inputs using debounced functions
+const debouncedRenderCreatedOrders = debounce(() => renderOrders('created'), 1500);
+const debouncedRenderShippingOrders = debounce(() => renderOrders('shipping'), 1500);
+const debouncedRenderDeliveredOrders = debounce(() => renderOrders('delivered'), 1500);
+
 searchCreatedOrdersInput.addEventListener('input', debouncedRenderCreatedOrders);
 clearSearchCreatedOrdersBtn.addEventListener('click', () => {
     searchCreatedOrdersInput.value = '';
@@ -2680,7 +2701,7 @@ loginSubmitBtn.addEventListener('click', async () => {
         await signInWithEmailAndPassword(auth, email, password);
         showMessage('Đăng nhập thành công!', 'success');
         loginErrorMessage.classList.add('hidden');
-        closeModal(loginRegisterModal); // Đóng modal đăng nhập sau khi đăng nhập thành công
+        closeModal(loginRegisterModal); // Close the login modal after successful login
     } catch (error) {
         console.error("Error during login:", error);
         loginErrorMessage.textContent = `Lỗi đăng nhập: ${error.message}`;

@@ -256,7 +256,8 @@ const registerUsernameInput = document.getElementById('register-username');
 const registerPasswordInput = document.getElementById('register-password');
 const registerConfirmPasswordInput = document.getElementById('register-confirm-password');
 const registerFullnameInput = document.getElementById('register-fullname');
-const registerPhoneInput = document = document.getElementById('register-phone');
+const registerPhoneInput = document.getElementById('register-phone'); // Corrected this line
+const registerProvinceInput = document.getElementById('register-province');
 const registerSubmitBtn = document.getElementById('register-submit-btn');
 const registerErrorMessage = document.getElementById('register-error-message');
 

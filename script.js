@@ -256,8 +256,7 @@ const registerUsernameInput = document.getElementById('register-username');
 const registerPasswordInput = document.getElementById('register-password');
 const registerConfirmPasswordInput = document.getElementById('register-confirm-password');
 const registerFullnameInput = document.getElementById('register-fullname');
-const registerPhoneInput = document.getElementById('register-phone');
-const registerProvinceInput = document = document.getElementById('register-province');
+const registerPhoneInput = document = document.getElementById('register-phone');
 const registerSubmitBtn = document.getElementById('register-submit-btn');
 const registerErrorMessage = document.getElementById('register-error-message');
 
@@ -1514,9 +1513,10 @@ async function renderOrders(status) {
 }
 
 // Event listeners for order search inputs using debounced functions
-const debouncedRenderCreatedOrders = debounce(() => renderOrders('created'), 1500);
-const debouncedRenderShippingOrders = debounce(() => renderOrders('shipping'), 1500);
-const debouncedRenderDeliveredOrders = debounce(() => renderOrders('delivered'), 1500);
+// Removed duplicated const declarations
+// const debouncedRenderCreatedOrders = debounce(() => renderOrders('created'), 1500);
+// const debouncedRenderShippingOrders = debounce(() => renderOrders('shipping'), 1500);
+// const debouncedRenderDeliveredOrders = debounce(() => renderOrders('delivered'), 1500);
 
 searchCreatedOrdersInput.addEventListener('input', debouncedRenderCreatedOrders);
 clearSearchCreatedOrdersBtn.addEventListener('click', () => {

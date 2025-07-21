@@ -213,7 +213,7 @@ const topSellingProductsList = document.getElementById('top-selling-products-lis
 const qrCodeDisplay = document.getElementById('qr-code-display');
 const bankNameDisplay = document.getElementById('bank-name-display');
 const accountNumberDisplay = document.getElementById('account-number-display');
-const accountHolderDisplay = document.getElementById('account-holder-holder');
+const accountHolderDisplay = document.getElementById('account-holder-display'); // Corrected ID here
 const vatBaseAmountDisplay = document.getElementById('vat-base-amount');
 // New elements for VAT breakdown display
 const totalVatOriginalDisplay = document.getElementById('total-vat-original-display');

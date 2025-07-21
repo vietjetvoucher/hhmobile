@@ -204,7 +204,7 @@ const shippingUnitImageURLInput = document.getElementById('shipping-unit-image-u
 const uploadShippingUnitImageBtn = document.getElementById('upload-shipping-unit-image-btn');
 
 const reportStartDateInput = document.getElementById('report-start-date');
-const reportEndDateInput = document = document.getElementById('report-end-date');
+const reportEndDateInput = document.getElementById('report-end-date');
 const generateReportBtn = document.getElementById('generate-report-btn');
 const totalRevenueDisplay = document.getElementById('total-revenue-display');
 const totalOrdersDisplay = document.getElementById('total-orders-display');
@@ -213,7 +213,7 @@ const topSellingProductsList = document.getElementById('top-selling-products-lis
 const qrCodeDisplay = document.getElementById('qr-code-display');
 const bankNameDisplay = document.getElementById('bank-name-display');
 const accountNumberDisplay = document.getElementById('account-number-display');
-const accountHolderDisplay = document.getElementById('account-holder-display');
+const accountHolderDisplay = document.getElementById('account-holder-holder');
 const vatBaseAmountDisplay = document.getElementById('vat-base-amount');
 // New elements for VAT breakdown display
 const totalVatOriginalDisplay = document.getElementById('total-vat-original-display');
@@ -1326,10 +1326,10 @@ async function renderOrders(status) {
                     <p class="text-gray-700 mb-2"><strong>Vị trí kho:</strong> ${order.orderLocation || 'N/A'}</p>
                     <p class="text-gray-700 mb-2"><strong>Ngày dự kiến giao:</strong> ${order.estimatedDeliveryDate || 'N/A'}</p>
                     <p class="text-gray-700 mb-2"><strong>Tổng tiền:</strong> ${formatCurrency(order.totalAmount)}</p>
-                    <p class="text-gray-700 mb-2"><strong>VAT (Khách trả):</strong> ${formatCurrency(order.totalVATCustomerPays)} (${order.vatPaymentStatus === 'paid' ? 'Đã thanh toán' : (order.vatPaymentStatus === 'pending_admin' ? 'Đang xác nhận thanh toán' : 'Chưa thanh toán')})</p>
+                    <p class="text-gray-700 mb-2"><strong>VAT (Khách trả):</strong> ${formatCurrency(order.totalVATCustomerPays)} (${order.vatPaymentStatus === 'paid' ? 'Đã thanh toán' : (order.vatPaymentStatus === 'pending_admin' ? 'Admin chờ xác nhận' : 'Chờ xác nhận')})</p>
                     <p class="text-gray-700 mb-2"><strong>VAT (Shop hỗ trợ):</strong> ${formatCurrency(order.totalShopSupportVAT)}</p>
                     <p class="text-gray-700 mb-2"><strong>Gói bảo hành:</strong> ${order.warrantyPackage ? `${order.warrantyPackage.name} (${formatCurrency(order.warrantyPackage.price - (order.warrantyPackage.price * order.warrantyPackage.discount / 100))})` : 'Không có'}</p>
-                    <p class="text-gray-700 mb-4"><strong>Trạng thái bảo hành:</strong> ${order.warrantyPackage ? (order.warrantyPaymentStatus === 'paid' ? 'Đã thanh toán' : (order.warrantyPaymentStatus === 'pending_admin' ? 'Đang xác nhận thanh toán' : 'Chưa thanh toán')) : 'Miễn phí đổi trả trong 15 ngày'}</p>
+                    <p class="text-gray-700 mb-4"><strong>Trạng thái bảo hành:</strong> ${order.warrantyPackage ? (order.warrantyPaymentStatus === 'paid' ? 'Đã thanh toán' : (order.warrantyPaymentStatus === 'pending_admin' ? 'Admin chờ xác nhận' : 'Chờ xác nhận')) : 'N/A'}</p>
                     <!-- Updated: Display "Thanh toán khi nhận hàng" with the total order amount for all statuses -->
                     <p class="text-red-600 font-bold mb-2">Thanh toán khi nhận hàng: ${formatCurrency(order.totalAmount - order.totalVATCustomerPays)}</p>
 
@@ -2441,14 +2441,12 @@ adminConfirmWarrantyBtn.addEventListener('click', async () => {
         const orderId = currentOrderForWarranty.id;
         const customerUserId = currentOrderForWarranty.userId; // Get the customer's user ID from the order
         const orderRefUser = doc(db, `artifacts/${appId}/users/${customerUserId}/orders`, orderId);
-        const orderRefAdmin = doc(collection(db, `artifacts/${appId}/public/data/adminOrders`), orderId);
-
-        // Update user's order
         await updateDoc(orderRefUser, { warrantyPaymentStatus: 'paid' });
         console.log(`Warranty payment for order ${orderId} set to paid for user.`);
 
         // Update admin's order
-        await updateDoc(orderRefAdmin, { warrantyPaymentStatus: 'paid' });
+        const adminOrderRef = doc(collection(db, `artifacts/${appId}/public/data/adminOrders`), orderId);
+        await updateDoc(adminOrderRef, { warrantyPaymentStatus: 'paid' });
         console.log(`Warranty payment for order ${orderId} set to paid for admin.`);
 
         showMessage(`Đã xác nhận thanh toán gói bảo hành cho đơn hàng #${orderId}.`, 'success');

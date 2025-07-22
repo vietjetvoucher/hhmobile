@@ -1345,7 +1345,7 @@ async function renderOrders(status) {
                     <p class="text-gray-700 mb-2"><strong>Khách hàng:</strong> ${order.customerName} (ID: ${order.userId})</p>
                     <p class="text-gray-700 mb-2"><strong>SĐT:</strong> <span class="blurred-content" id="order-phone-${order.id}">${order.customerPhone}</span> <button type="button" class="toggle-visibility-btn text-blue-500 hover:underline" data-target-id="order-phone-${order.id}"><i class="fas fa-eye"></i></button></p>
                     <p class="text-gray-700 mb-2"><strong>Địa chỉ:</strong> <span class="blurred-content" id="order-address-${order.id}">${order.customerAddress}</span> <button type="button" class="toggle-visibility-btn text-blue-500 hover:underline" data-target-id="order-address-${order.id}"><i class="fas fa-eye"></i></button></p>
-                    <p class="text-gray-700 mb-2"><strong>Vị trí kho:</strong> ${order.orderLocation || 'N/A'}</p>
+                    <p class="text-gray-700 mb-2"><strong>Vị trí hiện tại:</strong> ${order.orderLocation || 'N/A'}</p>
                     <p class="text-gray-700 mb-2"><strong>Ngày dự kiến giao:</strong> ${order.estimatedDeliveryDate || 'N/A'}</p>
                     <p class="text-gray-700 mb-2"><strong>Tổng tiền:</strong> ${formatCurrency(order.totalAmount)}</p>
                     <p class="text-gray-700 mb-2"><strong>VAT (Khách trả):</strong> ${formatCurrency(order.totalVATCustomerPays)} (${order.vatPaymentStatus === 'paid' ? 'Đã thanh toán' : (order.vatPaymentStatus === 'pending_admin' ? 'Đang xác nhận thanh toán' : 'Chưa thanh toán')})</p>

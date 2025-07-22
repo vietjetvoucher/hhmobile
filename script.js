@@ -361,12 +361,21 @@ async function loadShopData() {
             } else {
                 console.log("No shop data found in Firestore. Initializing with default data.");
                 // Initialize with default data if document doesn't exist
-                await setDoc(shopDocRef, shopDataCache);
-                console.log("Default shop data saved to Firestore.");
+                // This will only work if the user is an admin, otherwise it will fail due to security rules.
+                // For non-admin users, shopDataCache will remain empty, which might cause issues.
+                // A better approach for initial setup might be to ensure shopData is pre-populated by an admin.
+                // For now, we'll let the setDoc potentially fail for non-admins, but the app will still try to render with default empty data.
+                if (loggedInUser && loggedInUser.isAdmin) { // Only attempt to set default if admin
+                    await setDoc(shopDocRef, shopDataCache);
+                    console.log("Default shop data saved to Firestore by admin.");
+                } else {
+                    console.warn("Cannot set default shop data: User is not an admin.");
+                }
             }
 
             // Check if products array is empty and add a default product if it is
-            if (!shopDataCache.products || shopDataCache.products.length === 0) {
+            // This also needs to be restricted to admin, as it modifies shopDataCache.products
+            if ((!shopDataCache.products || shopDataCache.products.length === 0) && loggedInUser && loggedInUser.isAdmin) {
                 const defaultProduct = {
                     id: generateId(),
                     name: 'iPhone 16 Pro Max',
@@ -1163,6 +1172,7 @@ orderForm.addEventListener('submit', async (e) => {
             v.storage === (item.options.storage ? item.options.storage.value : null)
         );
 
+        // Check stock before creating order
         if (selectedVariant && selectedVariant.quantity < item.quantity) {
             showMessage(`Sản phẩm "${product.name}" (${item.options.color?.value || ''} ${item.options.storage?.value || ''}) không đủ số lượng. Chỉ còn ${selectedVariant.quantity} sản phẩm.`, 'error');
             hideLoading();
@@ -1202,7 +1212,7 @@ orderForm.addEventListener('submit', async (e) => {
 
     if (orderItems.length !== productsToOrder.length) {
         hideLoading();
-        return;
+        return; // Exit if any item is out of stock
     }
 
     const newOrder = {
@@ -1235,23 +1245,29 @@ orderForm.addEventListener('submit', async (e) => {
         await setDoc(doc(collection(db, `artifacts/${appId}/public/data/adminOrders`), newOrder.id), { ...newOrder, customerUserId: loggedInUser.id });
         console.log(`Order ${newOrder.id} saved to admin collection.`);
 
-
-        for (const item of productsToOrder) {
-            const productIndex = shopDataCache.products.findIndex(p => p.id === item.product.id);
-            if (productIndex > -1) {
-                const selectedColor = item.options.color ? item.options.color.value : null;
-                const selectedStorage = item.options.storage ? item.options.storage.value : null;
-                const variantIndex = shopDataCache.products[productIndex].variants.findIndex(v =>
-                    v.color === selectedColor && v.storage === selectedStorage
-                );
-                if (variantIndex > -1) {
-                    shopDataCache.products[productIndex].variants[variantIndex].quantity -= item.quantity;
-                    shopDataCache.products[productIndex].variants[variantIndex].sold = (shopDataCache.products[productIndex].variants[variantIndex].sold || 0) + item.quantity;
+        // Only update product quantities in shopDataCache and save if the current user is an admin
+        if (loggedInUser.isAdmin) {
+            for (const item of productsToOrder) {
+                const productIndex = shopDataCache.products.findIndex(p => p.id === item.product.id);
+                if (productIndex > -1) {
+                    const selectedColor = item.options.color ? item.options.color.value : null;
+                    const selectedStorage = item.options.storage ? item.options.storage.value : null;
+                    const variantIndex = shopDataCache.products[productIndex].variants.findIndex(v =>
+                        v.color === selectedColor && v.storage === selectedStorage
+                    );
+                    if (variantIndex > -1) {
+                        shopDataCache.products[productIndex].variants[variantIndex].quantity -= item.quantity;
+                        shopDataCache.products[productIndex].variants[variantIndex].sold = (shopDataCache.products[productIndex].variants[variantIndex].sold || 0) + item.quantity;
+                    }
                 }
             }
+            await saveShopData(); // Save the updated shopDataCache to Firestore
+            console.log("Shop data (product quantities) updated by admin.");
+        } else {
+            // Inform non-admin users that inventory updates are pending admin action
+            showMessage('Đơn hàng đã được tạo. Số lượng sản phẩm sẽ được cập nhật sau khi admin phê duyệt.', 'info');
         }
-        await saveShopData(); // Save the updated shopDataCache to Firestore
-        console.log("Shop data (product quantities) updated.");
+
 
         if (!isBuyNowFlow) {
             userCartCache = [];

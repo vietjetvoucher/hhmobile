@@ -17,7 +17,7 @@ const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__f
     appId: "1:273294651647:web:02bcd7be6f760cd6849cca",
     measurementId: "G-YSJ062B717"
 };
-const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? initialAuthToken : null; // Corrected variable name
+const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null; // Corrected variable name
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
@@ -361,21 +361,12 @@ async function loadShopData() {
             } else {
                 console.log("No shop data found in Firestore. Initializing with default data.");
                 // Initialize with default data if document doesn't exist
-                // This will only work if the user is an admin, otherwise it will fail due to security rules.
-                // For non-admin users, shopDataCache will remain empty, which might cause issues.
-                // A better approach for initial setup might be to ensure shopData is pre-populated by an admin.
-                // For now, we'll let the setDoc potentially fail for non-admins, but the app will still try to render with default empty data.
-                if (loggedInUser && loggedInUser.isAdmin) { // Only attempt to set default if admin
-                    await setDoc(shopDocRef, shopDataCache);
-                    console.log("Default shop data saved to Firestore by admin.");
-                } else {
-                    console.warn("Cannot set default shop data: User is not an admin.");
-                }
+                await setDoc(shopDocRef, shopDataCache);
+                console.log("Default shop data saved to Firestore.");
             }
 
             // Check if products array is empty and add a default product if it is
-            // This also needs to be restricted to admin, as it modifies shopDataCache.products
-            if ((!shopDataCache.products || shopDataCache.products.length === 0) && loggedInUser && loggedInUser.isAdmin) {
+            if (!shopDataCache.products || shopDataCache.products.length === 0) {
                 const defaultProduct = {
                     id: generateId(),
                     name: 'iPhone 16 Pro Max',
@@ -1172,7 +1163,6 @@ orderForm.addEventListener('submit', async (e) => {
             v.storage === (item.options.storage ? item.options.storage.value : null)
         );
 
-        // Check stock before creating order
         if (selectedVariant && selectedVariant.quantity < item.quantity) {
             showMessage(`Sản phẩm "${product.name}" (${item.options.color?.value || ''} ${item.options.storage?.value || ''}) không đủ số lượng. Chỉ còn ${selectedVariant.quantity} sản phẩm.`, 'error');
             hideLoading();
@@ -1212,7 +1202,7 @@ orderForm.addEventListener('submit', async (e) => {
 
     if (orderItems.length !== productsToOrder.length) {
         hideLoading();
-        return; // Exit if any item is out of stock
+        return;
     }
 
     const newOrder = {
@@ -1245,29 +1235,23 @@ orderForm.addEventListener('submit', async (e) => {
         await setDoc(doc(collection(db, `artifacts/${appId}/public/data/adminOrders`), newOrder.id), { ...newOrder, customerUserId: loggedInUser.id });
         console.log(`Order ${newOrder.id} saved to admin collection.`);
 
-        // Only update product quantities in shopDataCache and save if the current user is an admin
-        if (loggedInUser.isAdmin) {
-            for (const item of productsToOrder) {
-                const productIndex = shopDataCache.products.findIndex(p => p.id === item.product.id);
-                if (productIndex > -1) {
-                    const selectedColor = item.options.color ? item.options.color.value : null;
-                    const selectedStorage = item.options.storage ? item.options.storage.value : null;
-                    const variantIndex = shopDataCache.products[productIndex].variants.findIndex(v =>
-                        v.color === selectedColor && v.storage === selectedStorage
-                    );
-                    if (variantIndex > -1) {
-                        shopDataCache.products[productIndex].variants[variantIndex].quantity -= item.quantity;
-                        shopDataCache.products[productIndex].variants[variantIndex].sold = (shopDataCache.products[productIndex].variants[variantIndex].sold || 0) + item.quantity;
-                    }
+
+        for (const item of productsToOrder) {
+            const productIndex = shopDataCache.products.findIndex(p => p.id === item.product.id);
+            if (productIndex > -1) {
+                const selectedColor = item.options.color ? item.options.color.value : null;
+                const selectedStorage = item.options.storage ? item.options.storage.value : null;
+                const variantIndex = shopDataCache.products[productIndex].variants.findIndex(v =>
+                    v.color === selectedColor && v.storage === selectedStorage
+                );
+                if (variantIndex > -1) {
+                    shopDataCache.products[productIndex].variants[variantIndex].quantity -= item.quantity;
+                    shopDataCache.products[productIndex].variants[variantIndex].sold = (shopDataCache.products[productIndex].variants[variantIndex].sold || 0) + item.quantity;
                 }
             }
-            await saveShopData(); // Save the updated shopDataCache to Firestore
-            console.log("Shop data (product quantities) updated by admin.");
-        } else {
-            // Inform non-admin users that inventory updates are pending admin action
-            showMessage('Đơn hàng đã được tạo. Số lượng sản phẩm sẽ được cập nhật sau khi admin phê duyệt.', 'info');
         }
-
+        await saveShopData(); // Save the updated shopDataCache to Firestore
+        console.log("Shop data (product quantities) updated.");
 
         if (!isBuyNowFlow) {
             userCartCache = [];
@@ -2531,18 +2515,12 @@ function displayOrderTrackingModal(order) {
 
 // Authentication and User Management
 onAuthStateChanged(auth, async (user) => {
-    // Reset loggedInUser and currentUserId first to ensure a clean state
-    loggedInUser = { id: null, username: 'Khách', isAdmin: false, email: null, fullname: '', phone: '', province: '' };
-    currentUserId = null;
-    userOrdersCache = [];
-    userCartCache = [];
-
     if (user) {
         currentUserId = user.uid;
         console.log("User authenticated:", user.uid);
         const userProfileDocRef = doc(db, `artifacts/${appId}/users/${currentUserId}`);
         try {
-            const userDocSnap = await getDoc(userProfileDocRef); // AWAIT this to ensure profile is fetched
+            const userDocSnap = await getDoc(userProfileDocRef);
             if (userDocSnap.exists()) {
                 loggedInUser = { id: currentUserId, ...userDocSnap.data() };
                 // Ensure isAdmin is explicitly set based on email, even if not in Firestore doc
@@ -2564,16 +2542,12 @@ onAuthStateChanged(auth, async (user) => {
                 console.log("New user profile created:", loggedInUser);
             }
 
-            // NOW that loggedInUser is fully populated, set up shop data listener and user-specific listeners
-            // Call loadShopData here, after loggedInUser is set, so admin status is known for default product creation
-            await loadShopData();
-
+            // Listen to orders based on user type
             if (!loggedInUser.isAdmin) {
                 onSnapshot(collection(db, `artifacts/${appId}/users/${currentUserId}/orders`), (snapshot) => {
                     userOrdersCache = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                     console.log("User orders updated:", userOrdersCache);
-                    // Only render if loggedInUser is still valid (not logged out during async ops)
-                    if (loggedInUser && loggedInUser.id) {
+                    if (loggedInUser) {
                         renderOrders('created');
                         renderOrders('shipping');
                         renderOrders('delivered');
@@ -2597,7 +2571,7 @@ onAuthStateChanged(auth, async (user) => {
                 onSnapshot(collection(db, `artifacts/${appId}/public/data/adminOrders`), (snapshot) => {
                     userOrdersCache = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                     console.log("Admin orders updated:", userOrdersCache);
-                    if (loggedInUser && loggedInUser.id) { // Re-check loggedInUser in callback
+                    if (loggedInUser) {
                         renderOrders('created');
                         renderOrders('shipping');
                         renderOrders('delivered');
@@ -2607,22 +2581,230 @@ onAuthStateChanged(auth, async (user) => {
         } catch (error) {
             console.error("Error during user profile fetching/creation:", error);
             showMessage(`Lỗi tải hồ sơ người dùng: ${error.message}`, 'error');
-            // If there's an error fetching profile, log out the user to avoid inconsistent state
-            await signOut(auth);
         }
     } else {
-        console.log("User logged out or not authenticated.");
-        // All caches are already reset at the beginning of the function
-        // If no user is logged in, ensure shop data is loaded without admin privileges
-        await loadShopData(); // Load shop data for unauthenticated users (read-only)
+        // If no user is logged in, initialize loggedInUser as an anonymous/guest object
+        loggedInUser = { id: null, username: 'Khách', isAdmin: false, email: null, fullname: '', phone: '', province: '' };
+        currentUserId = null;
+        userOrdersCache = [];
+        userCartCache = [];
+        console.log("User logged out.");
     }
-    updateAuthUI(); // Update UI based on final auth state
-    showSection('product-list-section', showProductsBtn); // Always show products initially
+    updateAuthUI();
 });
 
+function updateAuthUI() {
+    // Ensure loggedInUser is not null before accessing its properties
+    if (loggedInUser && loggedInUser.id) { // Check if user is truly logged in (id is not null for authenticated users)
+        loginStatusBtn.textContent = `Xin chào, ${loggedInUser.username || loggedInUser.email || 'Khách'}`;
+        loginStatusBtn.onclick = logoutUser;
+        openManagementModalBtn.style.display = loggedInUser.isAdmin ? 'block' : 'none';
+        openSettingsModalBtn.style.display = loggedInUser.isAdmin ? 'block' : 'none';
+        openShopAnalyticsModalBtn.style.display = loggedInUser.isAdmin ? 'block' : 'none';
+    } else {
+        loginStatusBtn.textContent = 'Đăng nhập';
+        loginStatusBtn.onclick = () => openModal(loginRegisterModal);
+        openManagementModalBtn.style.display = 'none';
+        openSettingsModalBtn.style.display = 'none';
+        openShopAnalyticsModalBtn.style.display = 'none';
+    }
+}
+
+loginStatusBtn.addEventListener('click', () => {
+    if (!loggedInUser || !loggedInUser.id) { // Check if user is truly not logged in (id is null for guest)
+        openModal(loginRegisterModal);
+    } else {
+        logoutUser();
+    }
+});
+
+showRegisterFormLink.addEventListener('click', (e) => {
+    e.preventDefault();
+    loginForm.classList.add('hidden');
+    registerForm.classList.remove('hidden');
+    authModalTitle.textContent = 'Đăng ký';
+    loginErrorMessage.classList.add('hidden');
+    registerErrorMessage.classList.add('hidden');
+});
+
+showLoginFormLink.addEventListener('click', (e) => {
+    e.preventDefault();
+    registerForm.classList.add('hidden');
+    loginForm.classList.remove('hidden');
+    authModalTitle.textContent = 'Đăng nhập';
+    loginErrorMessage.classList.add('hidden');
+    registerErrorMessage.classList.add('hidden');
+});
+
+registerSubmitBtn.addEventListener('click', async () => {
+    const email = registerUsernameInput.value.trim();
+    const password = registerPasswordInput.value.trim();
+    const confirmPassword = registerConfirmPasswordInput.value.trim();
+    const fullname = registerFullnameInput.value.trim();
+    const phone = registerPhoneInput.value.trim();
+    const province = registerProvinceInput.value.trim();
+
+    if (!email || !password || !confirmPassword || !fullname || !phone || !province) {
+        registerErrorMessage.textContent = 'Vui lòng điền đầy đủ thông tin.';
+        registerErrorMessage.classList.remove('hidden');
+        return;
+    }
+    if (password !== confirmPassword) {
+        registerErrorMessage.textContent = 'Mật khẩu và xác nhận mật khẩu không khớp.';
+        registerErrorMessage.classList.remove('hidden');
+        return;
+    }
+
+    showLoading();
+    try {
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+        const isUserAdmin = (email === ADMIN_EMAIL);
+
+        await setDoc(doc(db, `artifacts/${appId}/users/${user.uid}`), {
+            username: email,
+            fullname,
+            phone,
+            province,
+            isAdmin: isUserAdmin,
+            email: email // Store email in user profile
+        });
+        console.log("User registered and profile created:", user.uid);
+
+        showMessage('Đăng ký thành công! Vui lòng đăng nhập.', 'success');
+        registerErrorMessage.classList.add('hidden');
+        loginForm.classList.remove('hidden');
+        registerForm.classList.add('hidden');
+        authModalTitle.textContent = 'Đăng nhập';
+        loginUsernameInput.value = email;
+        loginPasswordInput.value = '';
+    } catch (error) {
+        console.error("Error during registration:", error);
+        registerErrorMessage.textContent = `Lỗi đăng ký: ${error.message}`;
+        registerErrorMessage.classList.remove('hidden');
+    } finally {
+        hideLoading();
+    }
+});
+
+loginSubmitBtn.addEventListener('click', async () => {
+    const email = loginUsernameInput.value.trim();
+    const password = loginPasswordInput.value.trim();
+
+    if (!email || !password) {
+        loginErrorMessage.textContent = 'Vui lòng nhập email và mật khẩu.';
+        loginErrorMessage.classList.remove('hidden');
+        return;
+    }
+
+    showLoading();
+    try {
+        await signInWithEmailAndPassword(auth, email, password);
+        showMessage('Đăng nhập thành công!', 'success');
+        loginErrorMessage.classList.add('hidden');
+        closeModal(loginRegisterModal); // Close the login modal after successful login
+    } catch (error) {
+        console.error("Error during login:", error);
+        loginErrorMessage.textContent = `Lỗi đăng nhập: ${error.message}`;
+        loginErrorMessage.classList.remove('hidden');
+    } finally {
+        hideLoading();
+    }
+});
+
+async function logoutUser() {
+    showLoading();
+    try {
+        await signOut(auth);
+        showMessage('Đã đăng xuất.', 'info');
+        // No anonymous sign-in after logout as per new requirement
+    } catch (error) {
+        console.error("Error during logout:", error);
+        showMessage(`Lỗi đăng xuất: ${error.message}`, 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
+async function renderProfileModal() {
+    if (loggedInUser) {
+        profileUsernameInput.value = loggedInUser.username || '';
+        profileFullnameInput.value = loggedInUser.fullname || '';
+        profilePhoneInput.value = loggedInUser.phone || '';
+        profileProvinceInput.value = loggedInUser.province || '';
+    }
+}
+
+saveProfileBtn.addEventListener('click', async () => {
+    if (!loggedInUser || !loggedInUser.id) { // Check if user is truly not logged in (id is null for guest)
+        showMessage('Vui lòng đăng nhập để lưu hồ sơ.', 'info');
+        openModal(loginRegisterModal); // Show login modal
+        return;
+    }
+    showLoading();
+    try {
+        const profileRef = doc(db, `artifacts/${appId}/users/${loggedInUser.id}`);
+        await updateDoc(profileRef, {
+            fullname: profileFullnameInput.value.trim(),
+            phone: profilePhoneInput.value.trim(),
+            province: profileProvinceInput.value.trim()
+        });
+        loggedInUser.fullname = profileFullnameInput.value.trim();
+        loggedInUser.phone = profilePhoneInput.value.trim();
+        loggedInUser.province = profileProvinceInput.value.trim();
+        showMessage('Hồ sơ đã được cập nhật!', 'success');
+        console.log("User profile updated.");
+    } catch (error) {
+        console.error("Error updating user profile:", error);
+        profileErrorMessage.textContent = `Lỗi cập nhật hồ sơ: ${error.message}`;
+        profileErrorMessage.classList.remove('hidden');
+    } finally {
+        hideLoading();
+    }
+});
+
+async function saveUserCart() {
+    if (loggedInUser && currentUserId) {
+        showLoading();
+        try {
+            await setDoc(doc(collection(db, `artifacts/${appId}/users/${currentUserId}/cart`), 'currentCart'), { items: userCartCache });
+            console.log("User cart saved.");
+        } catch (error) {
+            console.error("Error saving cart:", error);
+            showMessage("Lỗi lưu giỏ hàng.", "error");
+        } finally {
+            hideLoading();
+        }
+    }
+}
+
+async function updateCartCount() {
+    if (loggedInUser && currentUserId) {
+        try {
+            const cartDocSnap = await getDoc(doc(collection(db, `artifacts/${appId}/users/${currentUserId}/cart`), 'currentCart'));
+            if (cartDocSnap.exists()) {
+                userCartCache = cartDocSnap.data().items || [];
+                const totalItems = userCartCache.reduce((sum, item) => sum + item.quantity, 0);
+                cartCountSpan.textContent = totalItems;
+            } else {
+                userCartCache = [];
+                cartCountSpan.textContent = 0;
+            }
+        } catch (error) {
+            console.error("Error updating cart count:", error);
+            cartCountSpan.textContent = 0;
+        }
+    } else {
+        cartCountSpan.textContent = 0;
+    }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
-    // All initial setup is now handled within onAuthStateChanged
-    // This ensures that loggedInUser is properly initialized before any data loading or UI rendering that depends on it.
+    // No automatic sign-in on page load.
+    // Instead, just load shop data and display products.
+    loadShopData();
+    showSection('product-list-section', showProductsBtn);
+    updateAuthUI(); // Initialize UI based on current (logged out) state
 });
 
 document.getElementById('open-address-in-map-btn').addEventListener('click', () => {

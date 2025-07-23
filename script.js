@@ -428,18 +428,20 @@ async function loadShopData() {
     }
 }
 
+// Hàm lưu dữ liệu cửa hàng vào Firestore
 async function saveShopData() {
-    showLoading();
+    showLoading(); // Hiển thị hiệu ứng tải
     try {
-        // Corrected Firestore path for shopData
+        // Lấy tham chiếu đến tài liệu shopData trong bộ sưu tập public/data/shopSettings
+        // Đường dẫn: artifacts/{appId}/public/data/shopSettings/shopData
         await setDoc(doc(collection(db, `artifacts/${appId}/public/data/shopSettings`), 'shopData'), shopDataCache);
-        showMessage('Dữ liệu cửa hàng đã được lưu!', 'success');
-        console.log("Shop data successfully saved to Firestore.");
+        showMessage('Dữ liệu cửa hàng đã được lưu!', 'success'); // Thông báo thành công
+        console.log("Shop data successfully saved to Firestore."); // Ghi log thành công
     } catch (error) {
-        console.error("Error saving shop data:", error);
-        showMessage(`Lỗi lưu dữ liệu cửa hàng: ${error.message}`, 'error');
+        console.error("Error saving shop data:", error); // Ghi log lỗi chi tiết
+        showMessage(`Lỗi lưu dữ liệu cửa hàng: ${error.message}`, 'error'); // Hiển thị thông báo lỗi cho người dùng
     } finally {
-        hideLoading();
+        hideLoading(); // Đảm bảo ẩn hiệu ứng tải dù có lỗi hay không
     }
 }
 
@@ -490,12 +492,15 @@ function updateAdvertisementBanner() {
 }
 
 shopSettingsForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
+    e.preventDefault(); // Ngăn chặn hành vi gửi form mặc định
+    // Kiểm tra xem người dùng có đăng nhập và có phải là admin không
     if (!loggedInUser || !loggedInUser.isAdmin) {
-        showMessage('Chờ admin kiểm duyệt', 'info');
+        showMessage('Chờ admin kiểm duyệt', 'info'); // Thông báo nếu không phải admin
         return;
     }
-    showLoading();
+    showLoading(); // Hiển thị hiệu ứng tải
+
+    // Cập nhật dữ liệu shopDataCache từ các trường nhập liệu
     shopDataCache.name = shopNameInput.value.trim();
     shopDataCache.address = shopAddressInput.value.trim();
     shopDataCache.backgroundImg = backgroundImageURLInput.value.trim();
@@ -504,14 +509,17 @@ shopSettingsForm.addEventListener('submit', async (e) => {
     shopDataCache.bankDetails.bankName = bankNameInput.value.trim();
     shopDataCache.bankDetails.accountNumber = accountNumberInput.value.trim();
     shopDataCache.bankDetails.accountHolder = accountHolderInput.value.trim();
-    shopDataCache.bankDetails.qrCodeImage = qrCodeImageURLInput.value.trim();
-    shopDataCache.shippingUnit.name = shippingUnitNameInput.value.trim();
-    shopDataCache.shippingUnit.image = shippingUnitImageURLInput.value.trim();
-    shopDataCache.adminEmail = adminEmailInput.value.trim(); // Save admin email
-    await saveShopData();
-    loadShopSettingsToUI();
-    hideLoading();
-    closeModal(shopSettingsModal);
+
+    // Cập nhật: Thêm kiểm tra null cho qrCodeImageURLInput và các input khác
+    shopDataCache.bankDetails.qrCodeImage = qrCodeImageURLInput ? qrCodeImageURLInput.value.trim() : ''; // Đã sửa lỗi tại đây
+    shopDataCache.shippingUnit.name = shippingUnitNameInput ? shippingUnitNameInput.value.trim() : '';
+    shopDataCache.shippingUnit.image = shippingUnitImageURLInput ? shippingUnitImageURLInput.value.trim() : '';
+    shopDataCache.adminEmail = adminEmailInput ? adminEmailInput.value.trim() : ''; // Lưu email admin
+
+    await saveShopData(); // Gọi hàm để lưu dữ liệu vào Firestore
+    loadShopSettingsToUI(); // Tải lại cài đặt cửa hàng để cập nhật giao diện
+    hideLoading(); // Ẩn hiệu ứng tải
+    closeModal(shopSettingsModal); // Đóng modal cài đặt
 });
 
 document.getElementById('upload-main-image-btn').addEventListener('click', () => {

@@ -428,20 +428,18 @@ async function loadShopData() {
     }
 }
 
-// Hàm lưu dữ liệu cửa hàng vào Firestore
 async function saveShopData() {
-    showLoading(); // Hiển thị hiệu ứng tải
+    showLoading();
     try {
-        // Lấy tham chiếu đến tài liệu shopData trong bộ sưu tập public/data/shopSettings
-        // Đường dẫn: artifacts/{appId}/public/data/shopSettings/shopData
+        // Corrected Firestore path for shopData
         await setDoc(doc(collection(db, `artifacts/${appId}/public/data/shopSettings`), 'shopData'), shopDataCache);
-        showMessage('Dữ liệu cửa hàng đã được lưu!', 'success'); // Thông báo thành công
-        console.log("Shop data successfully saved to Firestore."); // Ghi log thành công
+        showMessage('Dữ liệu cửa hàng đã được lưu!', 'success');
+        console.log("Shop data successfully saved to Firestore.");
     } catch (error) {
-        console.error("Error saving shop data:", error); // Ghi log lỗi chi tiết
-        showMessage(`Lỗi lưu dữ liệu cửa hàng: ${error.message}`, 'error'); // Hiển thị thông báo lỗi cho người dùng
+        console.error("Error saving shop data:", error);
+        showMessage(`Lỗi lưu dữ liệu cửa hàng: ${error.message}`, 'error');
     } finally {
-        hideLoading(); // Đảm bảo ẩn hiệu ứng tải dù có lỗi hay không
+        hideLoading();
     }
 }
 
@@ -468,7 +466,10 @@ async function loadShopSettingsToUI() {
     qrCodeImageURLInput.value = shopDataCache.bankDetails.qrCodeImage || '';
     shippingUnitNameInput.value = shopDataCache.shippingUnit.name || 'GHN Express';
     shippingUnitImageURLInput.value = shopDataCache.shippingUnit.image || '';
-    adminEmailInput.value = shopDataCache.adminEmail || ''; // Load admin email
+    // Đảm bảo rằng adminEmailInput tồn tại trước khi truy cập .value
+    if (adminEmailInput) {
+        adminEmailInput.value = shopDataCache.adminEmail || ''; // Load admin email
+    }
 
     updateAdvertisementBanner();
 }
@@ -492,15 +493,12 @@ function updateAdvertisementBanner() {
 }
 
 shopSettingsForm.addEventListener('submit', async (e) => {
-    e.preventDefault(); // Ngăn chặn hành vi gửi form mặc định
-    // Kiểm tra xem người dùng có đăng nhập và có phải là admin không
+    e.preventDefault();
     if (!loggedInUser || !loggedInUser.isAdmin) {
-        showMessage('Chờ admin kiểm duyệt', 'info'); // Thông báo nếu không phải admin
+        showMessage('Chờ admin kiểm duyệt', 'info');
         return;
     }
-    showLoading(); // Hiển thị hiệu ứng tải
-
-    // Cập nhật dữ liệu shopDataCache từ các trường nhập liệu
+    showLoading();
     shopDataCache.name = shopNameInput.value.trim();
     shopDataCache.address = shopAddressInput.value.trim();
     shopDataCache.backgroundImg = backgroundImageURLInput.value.trim();
@@ -509,17 +507,15 @@ shopSettingsForm.addEventListener('submit', async (e) => {
     shopDataCache.bankDetails.bankName = bankNameInput.value.trim();
     shopDataCache.bankDetails.accountNumber = accountNumberInput.value.trim();
     shopDataCache.bankDetails.accountHolder = accountHolderInput.value.trim();
-
-    // Cập nhật: Thêm kiểm tra null cho qrCodeImageURLInput và các input khác
-    shopDataCache.bankDetails.qrCodeImage = qrCodeImageURLInput ? qrCodeImageURLInput.value.trim() : ''; // Đã sửa lỗi tại đây
+    shopDataCache.bankDetails.qrCodeImage = qrCodeImageURLInput ? qrCodeImageURLInput.value.trim() : '';
     shopDataCache.shippingUnit.name = shippingUnitNameInput ? shippingUnitNameInput.value.trim() : '';
     shopDataCache.shippingUnit.image = shippingUnitImageURLInput ? shippingUnitImageURLInput.value.trim() : '';
-    shopDataCache.adminEmail = adminEmailInput ? adminEmailInput.value.trim() : ''; // Lưu email admin
-
-    await saveShopData(); // Gọi hàm để lưu dữ liệu vào Firestore
-    loadShopSettingsToUI(); // Tải lại cài đặt cửa hàng để cập nhật giao diện
-    hideLoading(); // Ẩn hiệu ứng tải
-    closeModal(shopSettingsModal); // Đóng modal cài đặt
+    // Đảm bảo rằng adminEmailInput tồn tại trước khi truy cập .value
+    shopDataCache.adminEmail = adminEmailInput ? adminEmailInput.value.trim() : ''; // Save admin email
+    await saveShopData();
+    loadShopSettingsToUI();
+    hideLoading();
+    closeModal(shopSettingsModal);
 });
 
 document.getElementById('upload-main-image-btn').addEventListener('click', () => {

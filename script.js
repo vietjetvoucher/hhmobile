@@ -1,3 +1,4 @@
+script
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import { getAuth, signInWithCustomToken, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc, onSnapshot, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
@@ -30,7 +31,7 @@ const DEFAULT_WAREHOUSE_ADDRESS = "194 Đ. Lê Duẩn, Khâm Thiên, Đống Đa
 
 let shopDataCache = {
     products: [],
-    vouchers: {}, // Voucher structure will be updated to include expiry
+    vouchers: {},
     warrantyPackages: [],
     bankDetails: {},
     advertisement: {},
@@ -133,7 +134,6 @@ const voucherCodeInput = document.getElementById('voucher-code');
 const applyVoucherBtn = document.getElementById('apply-voucher-btn');
 const buyNowDetailBtn = document.getElementById('buy-now-detail-btn');
 const addToCartDetailBtn = document.getElementById('add-to-cart-detail-btn');
-const voucherExpiryMessage = document.getElementById('voucher-expiry-message'); // New element
 
 const orderIdDisplay = document.getElementById('order-id-display');
 const orderProductsSummary = document.getElementById('order-products-summary');
@@ -179,7 +179,6 @@ const cancelEditBtn = document.getElementById('cancel-edit-btn');
 const addVoucherForm = document.getElementById('add-voucher-form');
 const newVoucherCodeInput = document.getElementById('new-voucher-code');
 const newVoucherValueInput = document.getElementById('new-voucher-value');
-const newVoucherExpiryInput = document.getElementById('new-voucher-expiry'); // New: Voucher expiry input
 const currentVouchersList = document.getElementById('current-vouchers-list');
 
 const addEditWarrantyPackageForm = document.getElementById('add-edit-warranty-package-form');
@@ -294,7 +293,6 @@ let currentOrderForTracking = null;
 let currentOrderForWarranty = null;
 let selectedWarrantyPackage = null;
 let currentPriceBeforeVoucherAndVAT = 0; // This will now represent the price before any VAT or discounts
-let voucherCountdownInterval = null; // New: To store the interval ID for voucher countdown
 
 const shippingZones = {
     'mienBac': { cost: 0, provinces: ['Hà Nội', 'Hải Phòng', 'Quảng Ninh', 'Bắc Ninh', 'Hải Dương', 'Hưng Yên', 'Vĩnh Phúc', 'Thái Nguyên', 'Phú Thọ', 'Bắc Giang', 'Lạng Sơn', 'Cao Bằng', 'Hà Giang', 'Tuyên Quang', 'Lai Châu', 'Điện Biên', 'Sơn La', 'Hòa Bình', 'Yên Bái', 'Lào Cai'] },
@@ -562,13 +560,7 @@ uploadShippingUnitImageBtn.addEventListener('click', () => {
     }
 });
 
-closeProductModalBtn.addEventListener('click', () => {
-    closeModal(productDetailModal);
-    if (voucherCountdownInterval) {
-        clearInterval(voucherCountdownInterval); // Clear interval when modal closes
-        voucherCountdownInterval = null;
-    }
-});
+closeProductModalBtn.addEventListener('click', () => closeModal(productDetailModal));
 closeOrderModalBtn.addEventListener('click', () => closeModal(orderCreationModal));
 closeEditShippingModalBtn.addEventListener('click', () => closeModal(editShippingOrderModal));
 closeManagementModalBtn.addEventListener('click', () => closeModal(shopManagementModal));
@@ -581,15 +573,7 @@ closePaymentWarrantyModalBtn.addEventListener('click', () => closeModal(paymentW
 closeLoginRegisterModalBtn.addEventListener('click', () => closeModal(loginRegisterModal));
 closeProfileModalBtn.addEventListener('click', () => closeModal(profileModal));
 
-productDetailModal.addEventListener('click', (e) => {
-    if (e.target === productDetailModal) {
-        closeModal(productDetailModal);
-        if (voucherCountdownInterval) {
-            clearInterval(voucherCountdownInterval); // Clear interval when modal closes
-            voucherCountdownInterval = null;
-        }
-    }
-});
+productDetailModal.addEventListener('click', (e) => { if (e.target === productDetailModal) closeModal(productDetailModal); });
 orderCreationModal.addEventListener('click', (e) => { if (e.target === orderCreationModal) closeModal(orderCreationModal); });
 editShippingOrderModal.addEventListener('click', (e) => { if (e.target === editShippingOrderModal) closeModal(editShippingOrderModal); });
 shopManagementModal.addEventListener('click', (e) => { if (e.target === shopManagementModal) closeModal(shopManagementModal); });
@@ -770,13 +754,6 @@ function displayProductDetail(product) {
     modalProductBasePrice.textContent = formatCurrency(product.basePrice);
     modalProductDescription.textContent = product.description;
     productOptionsContainer.innerHTML = '';
-    voucherExpiryMessage.classList.add('hidden'); // Hide expiry message by default
-
-    // Clear any existing countdown interval when displaying a new product detail
-    if (voucherCountdownInterval) {
-        clearInterval(voucherCountdownInterval);
-        voucherCountdownInterval = null;
-    }
 
     if (product.colors && product.colors.length > 0) {
         const colorDiv = document.createElement('div');
@@ -844,44 +821,6 @@ function selectOption(type, value, priceImpact, button, displayImage = null) {
     calculateProductPrice();
 }
 
-function updateVoucherCountdown() {
-    if (!currentAppliedVoucher || !currentAppliedVoucher.expiry) {
-        voucherExpiryMessage.classList.add('hidden');
-        if (voucherCountdownInterval) {
-            clearInterval(voucherCountdownInterval);
-            voucherCountdownInterval = null;
-        }
-        return;
-    }
-
-    const now = new Date();
-    const expiryTime = new Date(currentAppliedVoucher.expiry);
-    const timeLeft = expiryTime.getTime() - now.getTime();
-
-    if (timeLeft <= 0) {
-        currentAppliedVoucher = null; // Voucher expired
-        voucherExpiryMessage.classList.add('hidden');
-        showMessage('Mã voucher đã hết hạn.', 'error');
-        if (voucherCountdownInterval) {
-            clearInterval(voucherCountdownInterval);
-            voucherCountdownInterval = null;
-        }
-        calculateProductPrice(); // Re-calculate price without expired voucher
-        return;
-    }
-
-    const hours = Math.floor(timeLeft / (1000 * 60 * 60));
-    const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
-    const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
-
-    const formattedTime = [hours, minutes, seconds]
-        .map(unit => unit.toString().padStart(2, '0'))
-        .join(':');
-
-    voucherExpiryMessage.textContent = `(Voucher giá trị ${currentAppliedVoucher.displayValue} sẽ hết hạn sau ${formattedTime})`;
-    voucherExpiryMessage.classList.remove('hidden');
-}
-
 function calculateProductPrice() {
     let basePrice = currentSelectedProduct.basePrice;
     let priceAfterOptions = basePrice;
@@ -934,40 +873,13 @@ function calculateProductPrice() {
 
     let discountedPrice = finalPrice;
 
-    // Check voucher expiry and apply discount
-    // This part will now rely on updateVoucherCountdown for continuous updates
     if (currentAppliedVoucher) {
-        const now = new Date();
-        const expiryTime = new Date(currentAppliedVoucher.expiry);
-        if (expiryTime > now) {
-            if (currentAppliedVoucher.type === 'percentage') {
-                discountedPrice = finalPrice * (1 - currentAppliedVoucher.value);
-            } else if (currentAppliedVoucher.type === 'fixed') {
-                discountedPrice = finalPrice - currentAppliedVoucher.value;
-            } else if (currentAppliedVoucher.type === 'freeship') {
-                // Freeship logic handled at order creation/payment
-            }
-            // Start or restart the countdown interval
-            if (voucherCountdownInterval) {
-                clearInterval(voucherCountdownInterval);
-            }
-            voucherCountdownInterval = setInterval(updateVoucherCountdown, 1000);
-            updateVoucherCountdown(); // Initial call to display immediately
-        } else {
-            currentAppliedVoucher = null; // Voucher expired
-            showMessage('Mã voucher đã hết hạn.', 'error');
-            if (voucherCountdownInterval) {
-                clearInterval(voucherCountdownInterval);
-                voucherCountdownInterval = null;
-            }
-            voucherExpiryMessage.classList.add('hidden');
-        }
-    } else {
-        // If no voucher is applied or it's cleared, hide message and clear interval
-        voucherExpiryMessage.classList.add('hidden');
-        if (voucherCountdownInterval) {
-            clearInterval(voucherCountdownInterval);
-            voucherCountdownInterval = null;
+        if (currentAppliedVoucher.type === 'percentage') {
+            discountedPrice = finalPrice * (1 - currentAppliedVoucher.value);
+        } else if (currentAppliedVoucher.type === 'fixed') {
+            discountedPrice = finalPrice - currentAppliedVoucher.value;
+        } else if (currentAppliedVoucher.type === 'freeship') {
+            // Freeship logic handled at order creation/payment
         }
     }
 
@@ -991,22 +903,12 @@ applyVoucherBtn.addEventListener('click', () => {
     const voucher = shopDataCache.vouchers[voucherCode];
 
     if (voucher) {
-        const now = new Date();
-        const expiryTime = new Date(voucher.expiry);
-
-        if (expiryTime > now) {
-            currentAppliedVoucher = {
-                code: voucherCode,
-                type: voucher.type,
-                value: voucher.value,
-                expiry: voucher.expiry,
-                displayValue: voucher.displayValue // Store display value for message
-            };
-            showMessage(`Áp dụng voucher thành công!`, 'success');
-        } else {
-            currentAppliedVoucher = null;
-            showMessage('Mã voucher đã hết hạn.', 'error');
-        }
+        currentAppliedVoucher = {
+            code: voucherCode,
+            type: typeof voucher === 'number' && voucher < 1 ? 'percentage' : (typeof voucher === 'number' ? 'fixed' : 'freeship'),
+            value: voucher
+        };
+        showMessage(`Áp dụng voucher "${voucherCode}" thành công!`, 'success');
     } else {
         currentAppliedVoucher = null;
         showMessage('Mã voucher không hợp lệ hoặc không tồn tại.', 'error');
@@ -2033,17 +1935,11 @@ async function renderVouchersList() {
         currentVouchersList.innerHTML = '<p class="text-gray-500 italic">Chưa có voucher nào.</p>';
         return;
     }
-    vouchers.forEach(([code, voucherData]) => {
+    vouchers.forEach(([code, value]) => {
         const voucherDiv = document.createElement('div');
         voucherDiv.className = 'flex items-center justify-between bg-gray-100 p-3 rounded-lg shadow-sm';
-        const expiryDate = new Date(voucherData.expiry);
-        const now = new Date();
-        const isExpired = expiryDate <= now;
-        const expiryText = isExpired ? 'Đã hết hạn' : `Hết hạn: ${expiryDate.toLocaleString('vi-VN')}`;
-        const expiryColorClass = isExpired ? 'text-red-500' : 'text-green-600';
-
         voucherDiv.innerHTML = `
-            <p class="font-semibold text-gray-900">${code}: ${voucherData.displayValue} <span class="${expiryColorClass}">(${expiryText})</span></p>
+            <p class="font-semibold text-gray-900">${code}: ${typeof value === 'number' && value < 1 ? `${value * 100}%` : (typeof value === 'number' ? formatCurrency(value) : value)}</p>
             <button class="delete-voucher-btn bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-3 rounded-lg transition-all duration-200" data-voucher-code="${code}">Xóa</button>
         `;
         currentVouchersList.appendChild(voucherDiv);
@@ -2071,56 +1967,24 @@ addVoucherForm.addEventListener('submit', async (e) => {
     }
     showLoading();
     const code = newVoucherCodeInput.value.trim().toUpperCase();
-    let valueInput = newVoucherValueInput.value.trim();
-    const expiryInput = newVoucherExpiryInput.value.trim();
+    let value = newVoucherValueInput.value.trim();
 
-    let voucherValue;
-    let voucherType;
-    let displayValue;
-
-    if (valueInput.toLowerCase() === 'freeship') {
-        voucherValue = 'freeship';
-        voucherType = 'freeship';
-        displayValue = 'Miễn phí vận chuyển';
+    if (value.toLowerCase() === 'freeship') {
+        value = 'freeship';
     } else {
-        voucherValue = parseFloat(valueInput);
-        if (isNaN(voucherValue)) {
+        value = parseFloat(value);
+        if (isNaN(value)) {
             showMessage('Giá trị voucher không hợp lệ.', 'error');
             hideLoading();
             return;
         }
-        if (voucherValue < 1) {
-            voucherType = 'percentage';
-            displayValue = `${voucherValue * 100}%`;
-        } else {
-            voucherType = 'fixed';
-            displayValue = formatCurrency(voucherValue);
-        }
     }
 
-    if (!expiryInput) {
-        showMessage('Vui lòng nhập thời gian hết hạn cho voucher.', 'error');
-        hideLoading();
-        return;
-    }
-    const expiryDate = new Date(expiryInput);
-    if (isNaN(expiryDate.getTime())) {
-        showMessage('Định dạng thời gian hết hạn không hợp lệ. Vui lòng sử dụng định dạng YYYY-MM-DD HH:MM:SS.', 'error');
-        hideLoading();
-        return;
-    }
-
-    shopDataCache.vouchers[code] = {
-        value: voucherValue,
-        type: voucherType,
-        expiry: expiryDate.toISOString(), // Store as ISO string
-        displayValue: displayValue
-    };
+    shopDataCache.vouchers[code] = value;
     await saveShopData();
     // renderVouchersList(); // Removed, handled by onSnapshot
     newVoucherCodeInput.value = '';
     newVoucherValueInput.value = '';
-    newVoucherExpiryInput.value = ''; // Clear expiry input
     hideLoading();
 });
 

@@ -30,7 +30,7 @@ const DEFAULT_WAREHOUSE_ADDRESS = "194 Đ. Lê Duẩn, Khâm Thiên, Đống Đa
 
 let shopDataCache = {
     products: [],
-    vouchers: {},
+    vouchers: {}, // Voucher structure will be updated to include expiry
     warrantyPackages: [],
     bankDetails: {},
     advertisement: {},
@@ -133,6 +133,7 @@ const voucherCodeInput = document.getElementById('voucher-code');
 const applyVoucherBtn = document.getElementById('apply-voucher-btn');
 const buyNowDetailBtn = document.getElementById('buy-now-detail-btn');
 const addToCartDetailBtn = document.getElementById('add-to-cart-detail-btn');
+const voucherExpiryMessage = document.getElementById('voucher-expiry-message'); // New element
 
 const orderIdDisplay = document.getElementById('order-id-display');
 const orderProductsSummary = document.getElementById('order-products-summary');
@@ -178,6 +179,7 @@ const cancelEditBtn = document.getElementById('cancel-edit-btn');
 const addVoucherForm = document.getElementById('add-voucher-form');
 const newVoucherCodeInput = document.getElementById('new-voucher-code');
 const newVoucherValueInput = document.getElementById('new-voucher-value');
+const newVoucherExpiryInput = document.getElementById('new-voucher-expiry'); // New: Voucher expiry input
 const currentVouchersList = document.getElementById('current-vouchers-list');
 
 const addEditWarrantyPackageForm = document.getElementById('add-edit-warranty-package-form');
@@ -753,6 +755,7 @@ function displayProductDetail(product) {
     modalProductBasePrice.textContent = formatCurrency(product.basePrice);
     modalProductDescription.textContent = product.description;
     productOptionsContainer.innerHTML = '';
+    voucherExpiryMessage.classList.add('hidden'); // Hide expiry message by default
 
     if (product.colors && product.colors.length > 0) {
         const colorDiv = document.createElement('div');
@@ -872,13 +875,29 @@ function calculateProductPrice() {
 
     let discountedPrice = finalPrice;
 
+    // Check voucher expiry and apply discount
+    voucherExpiryMessage.classList.add('hidden'); // Hide previous messages
     if (currentAppliedVoucher) {
-        if (currentAppliedVoucher.type === 'percentage') {
-            discountedPrice = finalPrice * (1 - currentAppliedVoucher.value);
-        } else if (currentAppliedVoucher.type === 'fixed') {
-            discountedPrice = finalPrice - currentAppliedVoucher.value;
-        } else if (currentAppliedVoucher.type === 'freeship') {
-            // Freeship logic handled at order creation/payment
+        const now = new Date();
+        const expiryTime = new Date(currentAppliedVoucher.expiry);
+        if (expiryTime > now) {
+            if (currentAppliedVoucher.type === 'percentage') {
+                discountedPrice = finalPrice * (1 - currentAppliedVoucher.value);
+            } else if (currentAppliedVoucher.type === 'fixed') {
+                discountedPrice = finalPrice - currentAppliedVoucher.value;
+            } else if (currentAppliedVoucher.type === 'freeship') {
+                // Freeship logic handled at order creation/payment
+            }
+            // Display expiry message
+            const timeLeft = expiryTime.getTime() - now.getTime();
+            const hours = Math.floor(timeLeft / (1000 * 60 * 60));
+            const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+            voucherExpiryMessage.textContent = `(Voucher giá trị ${currentAppliedVoucher.displayValue} sẽ hết hạn sau ${hours} giờ ${minutes} phút ${seconds} giây)`;
+            voucherExpiryMessage.classList.remove('hidden');
+        } else {
+            currentAppliedVoucher = null; // Voucher expired
+            showMessage('Mã voucher đã hết hạn.', 'error');
         }
     }
 
@@ -902,12 +921,22 @@ applyVoucherBtn.addEventListener('click', () => {
     const voucher = shopDataCache.vouchers[voucherCode];
 
     if (voucher) {
-        currentAppliedVoucher = {
-            code: voucherCode,
-            type: typeof voucher === 'number' && voucher < 1 ? 'percentage' : (typeof voucher === 'number' ? 'fixed' : 'freeship'),
-            value: voucher
-        };
-        showMessage(`Áp dụng voucher "${voucherCode}" thành công!`, 'success');
+        const now = new Date();
+        const expiryTime = new Date(voucher.expiry);
+
+        if (expiryTime > now) {
+            currentAppliedVoucher = {
+                code: voucherCode,
+                type: voucher.type,
+                value: voucher.value,
+                expiry: voucher.expiry,
+                displayValue: voucher.displayValue // Store display value for message
+            };
+            showMessage(`Áp dụng voucher thành công!`, 'success');
+        } else {
+            currentAppliedVoucher = null;
+            showMessage('Mã voucher đã hết hạn.', 'error');
+        }
     } else {
         currentAppliedVoucher = null;
         showMessage('Mã voucher không hợp lệ hoặc không tồn tại.', 'error');
@@ -1934,11 +1963,17 @@ async function renderVouchersList() {
         currentVouchersList.innerHTML = '<p class="text-gray-500 italic">Chưa có voucher nào.</p>';
         return;
     }
-    vouchers.forEach(([code, value]) => {
+    vouchers.forEach(([code, voucherData]) => {
         const voucherDiv = document.createElement('div');
         voucherDiv.className = 'flex items-center justify-between bg-gray-100 p-3 rounded-lg shadow-sm';
+        const expiryDate = new Date(voucherData.expiry);
+        const now = new Date();
+        const isExpired = expiryDate <= now;
+        const expiryText = isExpired ? 'Đã hết hạn' : `Hết hạn: ${expiryDate.toLocaleString('vi-VN')}`;
+        const expiryColorClass = isExpired ? 'text-red-500' : 'text-green-600';
+
         voucherDiv.innerHTML = `
-            <p class="font-semibold text-gray-900">${code}: ${typeof value === 'number' && value < 1 ? `${value * 100}%` : (typeof value === 'number' ? formatCurrency(value) : value)}</p>
+            <p class="font-semibold text-gray-900">${code}: ${voucherData.displayValue} <span class="${expiryColorClass}">(${expiryText})</span></p>
             <button class="delete-voucher-btn bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-3 rounded-lg transition-all duration-200" data-voucher-code="${code}">Xóa</button>
         `;
         currentVouchersList.appendChild(voucherDiv);
@@ -1966,24 +2001,56 @@ addVoucherForm.addEventListener('submit', async (e) => {
     }
     showLoading();
     const code = newVoucherCodeInput.value.trim().toUpperCase();
-    let value = newVoucherValueInput.value.trim();
+    let valueInput = newVoucherValueInput.value.trim();
+    const expiryInput = newVoucherExpiryInput.value.trim();
 
-    if (value.toLowerCase() === 'freeship') {
-        value = 'freeship';
+    let voucherValue;
+    let voucherType;
+    let displayValue;
+
+    if (valueInput.toLowerCase() === 'freeship') {
+        voucherValue = 'freeship';
+        voucherType = 'freeship';
+        displayValue = 'Miễn phí vận chuyển';
     } else {
-        value = parseFloat(value);
-        if (isNaN(value)) {
+        voucherValue = parseFloat(valueInput);
+        if (isNaN(voucherValue)) {
             showMessage('Giá trị voucher không hợp lệ.', 'error');
             hideLoading();
             return;
         }
+        if (voucherValue < 1) {
+            voucherType = 'percentage';
+            displayValue = `${voucherValue * 100}%`;
+        } else {
+            voucherType = 'fixed';
+            displayValue = formatCurrency(voucherValue);
+        }
     }
 
-    shopDataCache.vouchers[code] = value;
+    if (!expiryInput) {
+        showMessage('Vui lòng nhập thời gian hết hạn cho voucher.', 'error');
+        hideLoading();
+        return;
+    }
+    const expiryDate = new Date(expiryInput);
+    if (isNaN(expiryDate.getTime())) {
+        showMessage('Định dạng thời gian hết hạn không hợp lệ. Vui lòng sử dụng định dạng YYYY-MM-DD HH:MM:SS.', 'error');
+        hideLoading();
+        return;
+    }
+
+    shopDataCache.vouchers[code] = {
+        value: voucherValue,
+        type: voucherType,
+        expiry: expiryDate.toISOString(), // Store as ISO string
+        displayValue: displayValue
+    };
     await saveShopData();
     // renderVouchersList(); // Removed, handled by onSnapshot
     newVoucherCodeInput.value = '';
     newVoucherValueInput.value = '';
+    newVoucherExpiryInput.value = ''; // Clear expiry input
     hideLoading();
 });
 

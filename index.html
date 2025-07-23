@@ -382,7 +382,6 @@
                 <p class="text-xl font-semibold mb-2 text-gray-700">Tổng giá (chưa VAT): <span id="modal-product-price-display" class="price-original"></span></p>
                 <p class="text-xs font-semibold mb-2 text-gray-700">VAT: <span id="modal-product-vat-display" class="font-bold text-black-600"></span></p>
                 <p id="modal-product-discount-display" class="text-xl font-semibold mb-4 price-discounted hidden"></p>
-                <div id="voucher-expiry-message" class="text-red-500 font-bold text-sm mb-4 hidden"></div>
 
                 <div id="product-options" class="mb-6 space-y-4">
                 </div>
@@ -594,11 +593,6 @@
                         <div>
                             <label for="new-voucher-value" class="block text-gray-700 text-lg font-bold mb-2">Giá Trị Voucher (ví dụ: 0.10 cho 10%, 50000 cho 50.000 VND):</label>
                             <input type="number" step="any" id="new-voucher-value" class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500" required min="0">
-                        </div>
-
-                        <div>
-                            <label for="new-voucher-expiry" class="block text-gray-700 text-lg font-bold mb-2">Thời gian hết hạn (YYYY-MM-DD HH:MM:SS):</label>
-                            <input type="datetime-local" id="new-voucher-expiry" class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500" required>
                         </div>
                         <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg w-full transition-all duration-200 shadow-lg"><i class="fas fa-plus-square mr-2"></i>Thêm Voucher</button>
                     </form>

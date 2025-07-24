@@ -1242,7 +1242,7 @@ function populateOrderCreationModal() {
     orderLocationInput.value = DEFAULT_WAREHOUSE_ADDRESS; // Default warehouse address
 
     const today = new Date();
-    today.setDate(today.getDate() + 5); // Estimated delivery date = current date + 3 days
+    today.setDate(today.getDate() + 3); // Estimated delivery date = current date + 3 days
     estimatedDeliveryDateInput.value = today.toISOString().split('T')[0]; // Format as YYYY-MM-DD
 
     orderStatusSteps.forEach(step => step.classList.remove('active'));
@@ -1672,7 +1672,7 @@ async function updateOrderStatus(orderId, customerUserId, actionType) { // actio
             newStatus = 'shipping';
             // Khi duyệt đơn hàng sang trạng thái shipping, tính ngày dự kiến giao hàng
             const today = new Date();
-            today.setDate(today.getDate() + 4); // Cộng thêm 4 ngày kể từ ngày duyệt
+            today.setDate(today.getDate() + 5); // Cộng thêm 4 ngày kể từ ngày duyệt
             updates.estimatedDeliveryDate = today.toISOString().split('T')[0];
             updates.status = newStatus;
         } else if (actionType === 'approve_shipping' && newStatus === 'shipping') {

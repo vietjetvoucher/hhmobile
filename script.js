@@ -1,3 +1,4 @@
+csr
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import { getAuth, signInWithCustomToken, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc, onSnapshot, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
@@ -51,96 +52,21 @@ document.body.appendChild(loadingOverlay);
 
 const messageDisplay = document.createElement('div');
 messageDisplay.id = 'messageDisplay';
-// Cập nhật các lớp CSS để thông báo nổi bật hơn và có hiệu ứng mờ dần
-messageDisplay.className = 'message hidden fixed p-4 rounded-lg shadow-lg z-50 top-1/4 left-1/2 transform -translate-x-1/2 opacity-0 transition-all duration-500 ease-in-out';
+messageDisplay.className = 'message hidden fixed top-24 right-6 p-4 rounded-lg shadow-lg z-50';
 document.body.appendChild(messageDisplay);
-
-// New: Confirmation Modal elements
-const confirmModal = document.createElement('div');
-confirmModal.id = 'confirm-modal';
-confirmModal.className = 'fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center hidden z-50';
-confirmModal.innerHTML = `
-    <div class="bg-white p-6 rounded-lg shadow-xl w-80">
-        <p id="confirm-message" class="mb-4 text-lg font-semibold text-gray-800"></p>
-        <div class="flex justify-end space-x-3">
-            <button id="confirm-cancel-btn" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-full transition-colors duration-200">Hủy</button>
-            <button id="confirm-ok-btn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-full transition-colors duration-200">Xác nhận</button>
-        </div>
-    </div>
-`;
-document.body.appendChild(confirmModal);
-
-const confirmMessageElement = document.getElementById('confirm-message');
-const confirmOkBtn = document.getElementById('confirm-ok-btn');
-const confirmCancelBtn = document.getElementById('confirm-cancel-btn');
-
-let confirmCallback = null; // To store the callback for the confirmation modal
 
 function showLoading() { loadingOverlay.classList.remove('hidden'); }
 function hideLoading() { loadingOverlay.classList.add('hidden'); }
-
-// Cập nhật hàm showMessage để thêm hiệu ứng mờ dần và vị trí
 function showMessage(message, type = 'info') {
     messageDisplay.textContent = message;
-    // Xóa các lớp CSS cũ và đặt lại các lớp cơ bản cho sự chuyển đổi nhất quán
-    messageDisplay.className = `message fixed p-4 rounded-lg shadow-lg z-50
-                                top-1/4 left-1/2 transform -translate-x-1/2
-                                opacity-0 transition-all duration-500 ease-in-out`;
-
-    // Thêm các lớp CSS cho từng loại thông báo
-    if (type === 'success') {
-        messageDisplay.classList.add('bg-green-500', 'text-white');
-    } else if (type === 'error') {
-        messageDisplay.classList.add('bg-red-500', 'text-white');
-    } else { // info hoặc mặc định
-        messageDisplay.classList.add('bg-blue-500', 'text-white');
-    }
-
-    messageDisplay.classList.remove('hidden'); // Hiển thị phần tử (nhưng vẫn trong suốt)
-    // Dùng một khoảng thời gian chờ nhỏ để cho phép trình duyệt vẽ lại trước khi thêm opacity-100, kích hoạt chuyển đổi
+    messageDisplay.className = `message ${type} fixed top-24 right-6 p-4 rounded-lg shadow-lg z-50`;
+    messageDisplay.classList.remove('hidden');
     setTimeout(() => {
-        messageDisplay.classList.add('opacity-100');
-    }, 10); // Độ trễ nhỏ để áp dụng chuyển đổi CSS
-
-    // Đặt thời gian để ẩn thông báo
-    setTimeout(() => {
-        messageDisplay.classList.remove('opacity-100'); // Bắt đầu hiệu ứng mờ dần
-        // Sau khi mờ dần, ẩn hoàn toàn và xóa văn bản
-        setTimeout(() => {
-            messageDisplay.classList.add('hidden'); // Ẩn hoàn toàn
-            messageDisplay.textContent = '';
-        }, 500); // Khớp với thời gian chuyển đổi
-    }, 3000); // Thông báo hiển thị đầy đủ trong 3 giây
+        messageDisplay.classList.add('hidden');
+        messageDisplay.textContent = '';
+        messageDisplay.className = 'message hidden fixed top-24 right-6 p-4 rounded-lg shadow-lg z-50';
+    }, 3000);
 }
-
-// New: Function to show custom confirmation modal
-function showConfirmModal(message, onConfirm) {
-    confirmMessageElement.textContent = message;
-    confirmModal.classList.remove('hidden');
-    document.body.classList.add('overflow-hidden');
-    confirmCallback = onConfirm;
-}
-
-function closeConfirmModal() {
-    confirmModal.classList.add('hidden');
-    document.body.classList.remove('overflow-hidden');
-    confirmCallback = null;
-}
-
-confirmOkBtn.addEventListener('click', () => {
-    if (confirmCallback) {
-        confirmCallback(true);
-    }
-    closeConfirmModal();
-});
-
-confirmCancelBtn.addEventListener('click', () => {
-    if (confirmCallback) {
-        confirmCallback(false);
-    }
-    closeConfirmModal();
-});
-
 
 const shopNameDisplay = document.getElementById('shop-name-display');
 const shopAddressDisplay = document.getElementById('shop-address-display');
@@ -362,7 +288,7 @@ const clearSearchCreatedOrdersBtn = document.getElementById('clear-search-create
 const searchShippingOrdersInput = document.getElementById('search-shipping-orders');
 const clearSearchShippingOrdersBtn = document.getElementById('clear-search-shipping-orders');
 const searchDeliveredOrdersInput = document.getElementById('search-delivered-orders');
-const clearSearchDeliveredOrdersBtn = document.getElementById('clear-search-delivered-experiments');
+const clearSearchDeliveredOrdersBtn = document.getElementById('clear-search-delivered-orders');
 
 
 let currentSelectedProduct = null;
@@ -800,7 +726,7 @@ function renderProductCard(product) {
     card.innerHTML = `
         <img src="${product.image}" onerror="this.onerror=null;this.src='https://placehold.co/300x200/cccccc/333333?text=No+Image';" alt="${product.name}" class="w-full h-48 object-cover rounded-lg mb-4 shadow-md">
         <h3 class="text-xl font-semibold mb-2 text-gray-900">${product.name}</h3>
-        <p class="text-lg text-gray-700">Giá sản phẩm: <span class="font-bold">${formatCurrency(product.basePrice)}</span></p>
+        <p class="text-lg text-gray-700">Giá gốc: <span class="font-bold">${formatCurrency(product.basePrice)}</span></p>
         ${starsHtml}
         <button data-product-id="${product.id}" class="view-product-btn mt-4 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-5 rounded-full transition-all duration-200 shadow-md">Xem chi tiết</button>
     `;
@@ -853,9 +779,6 @@ function displayProductDetail(product) {
     modalProductDescription.textContent = product.description;
     productOptionsContainer.innerHTML = '';
     voucherExpiryMessage.classList.add('hidden'); // Hide expiry message by default
-
-    // Explicitly remove line-through on display of new product detail
-    modalProductPriceDisplay.classList.remove('line-through', 'text-gray-500'); 
 
     // Clear any existing countdown interval when displaying a new product detail
     if (voucherCountdownInterval) {
@@ -985,7 +908,7 @@ function calculateProductPrice() {
         );
     }
 
-    let finalPrice = priceAfterOptions; // This is the price after options, before any voucher
+    let finalPrice = priceAfterOptions;
     let remainingQuantity = 'N/A';
     let soldQuantity = 'N/A';
 
@@ -1017,20 +940,20 @@ function calculateProductPrice() {
     // Customer pays 20% of the total VAT
     let customerVatPortion = totalVatForProduct * 0.20;
 
-    let discountedPrice = finalPrice; // Initialize discountedPrice with finalPrice
+    let discountedPrice = finalPrice;
 
     // Check voucher expiry and apply discount
     // This part will now rely on updateVoucherCountdown for continuous updates
-    let isVoucherAppliedAndValid = false;
     if (currentAppliedVoucher) {
         const now = new Date();
         const expiryTime = new Date(currentAppliedVoucher.expiry);
         if (expiryTime > now) {
-            isVoucherAppliedAndValid = true;
             if (currentAppliedVoucher.type === 'percentage') {
                 discountedPrice = finalPrice * (1 - currentAppliedVoucher.value);
             } else if (currentAppliedVoucher.type === 'fixed') {
                 discountedPrice = finalPrice - currentAppliedVoucher.value;
+            } else if (currentAppliedVoucher.type === 'freeship') {
+                // Freeship logic handled at order creation/payment
             }
             // Start or restart the countdown interval
             if (voucherCountdownInterval) {
@@ -1056,22 +979,14 @@ function calculateProductPrice() {
         }
     }
 
-    currentCalculatedPrice = isVoucherAppliedAndValid ? discountedPrice : finalPrice; // Store the actual price to be paid for ordering
+    currentCalculatedPrice = discountedPrice; // This is the price after product options and voucher, before customer's VAT portion
 
-    // Update modalProductPriceDisplay
-    modalProductPriceDisplay.textContent = formatCurrency(finalPrice);
-    if (isVoucherAppliedAndValid) {
-        modalProductPriceDisplay.classList.add('line-through', 'text-gray-500'); // Add strikethrough and gray out original price
-    } else {
-        modalProductPriceDisplay.classList.remove('line-through', 'text-gray-500');
-    }
-
-    modalProductVATDisplay.textContent = formatCurrency(customerVatPortion);
+    modalProductPriceDisplay.textContent = formatCurrency(finalPrice); // Display price before customer VAT portion
+    modalProductVATDisplay.textContent = formatCurrency(customerVatPortion); // Display customer's VAT portion (2% of original)
     modalProductSold.textContent = soldQuantity;
     modalProductRemaining.textContent = remainingQuantity;
 
-    // Update modalProductDiscountDisplay
-    if (isVoucherAppliedAndValid) {
+    if (currentAppliedVoucher) {
         modalProductDiscountDisplay.classList.remove('hidden');
         modalProductDiscountDisplay.textContent = `Giá sau voucher: ${formatCurrency(discountedPrice)}`;
     } else {
@@ -1084,13 +999,14 @@ applyVoucherBtn.addEventListener('click', () => {
     const voucher = shopDataCache.vouchers[voucherCode];
 
     if (voucher) {
-        // Kiểm tra voucher admin: chỉ cho phép admin dùng
+        // Đây là phần code mới được thêm vào để kiểm tra voucher admin
         if (voucher.isAdminVoucher && (!loggedInUser || !loggedInUser.isAdmin)) {
             currentAppliedVoucher = null;
             showMessage('Mã voucher này chỉ dành cho quản trị viên.', 'error');
             calculateProductPrice();
-            return;
+            return; // Dừng xử lý nếu là voucher admin và người dùng không phải admin
         }
+        // Kết thúc phần code mới
 
         const now = new Date();
         const expiryTime = new Date(voucher.expiry);
@@ -1101,7 +1017,7 @@ applyVoucherBtn.addEventListener('click', () => {
                 type: voucher.type,
                 value: voucher.value,
                 expiry: voucher.expiry,
-                displayValue: voucher.displayValue // Store display value for message
+                displayValue: voucher.displayValue // Lưu giá trị hiển thị để dùng trong tin nhắn
             };
             showMessage(`Áp dụng voucher thành công!`, 'success');
         } else {
@@ -1274,7 +1190,7 @@ buyAllCartBtn.addEventListener('click', () => {
             color: item.selectedColor,
             storage: item.selectedStorage
         },
-        quantity: 1,
+        quantity: item.quantity,
         priceAtOrder: item.priceAtAddToCart, // Price after options and voucher
         originalPriceForVAT: item.originalPriceForVAT, // Price before VAT/discount for VAT calculation
         voucher: null
@@ -1317,7 +1233,7 @@ function populateOrderCreationModal() {
             <img src="${item.product.image}" onerror="this.onerror=null;this.src='https://placehold.co/50x50/cccccc/333333?text=SP';" class="w-12 h-12 object-cover rounded-md">
             <div class="flex-1">
                 <p class="font-semibold text-gray-800">${item.product.name} ${item.options.color ? `(${item.options.color.value})` : ''} ${item.options.storage ? `(${item.options.storage.value})` : ''}</p>
-                <p class="text-sm text-gray-600">Số lượng: ${item.quantity} x ${formatCurrency(item.priceAtOrder)} (Giá sản phẩm)</p>
+                <p class="text-sm text-gray-600">Số lượng: ${item.quantity} x ${formatCurrency(item.priceAtOrder)} (Giá gốc)</p>
                 <p class="text-sm text-gray-600">VAT (khách trả): ${formatCurrency(itemCustomerVATPortion)}</p>
             </div>
             <span class="font-bold text-gray-900">${formatCurrency(itemTotalPrice)}</span>
@@ -1553,8 +1469,8 @@ async function renderOrders(status) {
                     <p class="text-gray-700 mb-2"><strong>Ngày dự kiến giao:</strong> ${order.estimatedDeliveryDate || 'N/A'}</p>
                     <p class="text-gray-700 mb-2"><strong>Tổng tiền:</strong> ${formatCurrency(order.totalAmount)}</p>
                     <p class="text-gray-700 mb-2"><strong>VAT (Khách trả):</strong> ${formatCurrency(order.totalVATCustomerPays)} (${order.vatPaymentStatus === 'paid' ? 'Đã thanh toán' : (order.vatPaymentStatus === 'pending_admin' ? 'Đang xác nhận thanh toán' : 'Chưa thanh toán')})</p>
-                    <p class="text-gray-700 mb-2"><strong>VAT (Shop đã hỗ trợ thanh toán cho khách hàng ):</strong> ${formatCurrency(order.totalShopSupportVAT)}</p>
-                    <p class="text-gray-700 mb-2"><strong>Gói bảo hành:</strong> ${order.warrantyPackage ? `${order.warrantyPackage.name} (${formatCurrency(order.warrantyPackage.price - (order.warrantyPackage.price * order.warrantyPackage.discount / 100))})` : 'Chưa đăng ký'}</p>
+                    <p class="text-gray-700 mb-2"><strong>VAT (Shop hỗ trợ):</strong> ${formatCurrency(order.totalShopSupportVAT)}</p>
+                    <p class="text-gray-700 mb-2"><strong>Gói bảo hành:</strong> ${order.warrantyPackage ? `${order.warrantyPackage.name} (${formatCurrency(order.warrantyPackage.price - (order.warrantyPackage.price * order.warrantyPackage.discount / 100))})` : 'Không có'}</p>
                     <p class="text-gray-700 mb-4"><strong>Trạng thái bảo hành:</strong> ${order.warrantyPackage ? (order.warrantyPaymentStatus === 'paid' ? 'Đã thanh toán' : (order.warrantyPaymentStatus === 'pending_admin' ? 'Đang xác nhận thanh toán' : 'Chờ xác nhận')) : 'Miễn phí đổi trả trong 30 ngày'}</p>
                     <!-- Updated: Display "Thanh toán khi nhận hàng" with the total order amount for all statuses -->
                     <p class="text-red-600 font-bold mb-2">Thanh toán khi nhận hàng: ${formatCurrency(order.totalAmount - order.totalVATCustomerPays)}</p>
@@ -1644,12 +1560,9 @@ async function renderOrders(status) {
                 button.addEventListener('click', async (e) => {
                     const orderId = e.target.dataset.orderId;
                     const customerUserId = e.target.dataset.customerUserId;
-                    // Thay thế confirm bằng showConfirmModal
-                    showConfirmModal('Bạn có chắc chắn muốn hủy đơn hàng này?', async (confirmed) => {
-                        if (confirmed) {
-                            await deleteOrder(orderId, customerUserId);
-                        }
-                    });
+                    if (confirm('Bạn có chắc chắn muốn hủy đơn hàng này?')) {
+                        await deleteOrder(orderId, customerUserId);
+                    }
                 });
             });
 
@@ -1933,12 +1846,9 @@ function renderProductManagementList() {
                 return;
             }
             const productId = e.target.dataset.productId;
-            // Thay thế confirm bằng showConfirmModal
-            showConfirmModal('Bạn có chắc chắn muốn xóa sản phẩm này?', async (confirmed) => {
-                if (confirmed) {
-                    await deleteProduct(productId);
-                }
-            });
+            if (confirm('Bạn có chắc chắn muốn xóa sản phẩm này?')) {
+                await deleteProduct(productId);
+            }
         });
     });
 }
@@ -2187,12 +2097,9 @@ async function renderVouchersList() {
                 return;
             }
             const voucherCode = e.target.dataset.voucherCode;
-            // Thay thế confirm bằng showConfirmModal
-            showConfirmModal('Bạn có chắc chắn muốn xóa voucher này?', async (confirmed) => {
-                if (confirmed) {
-                    await deleteVoucher(voucherCode);
-                }
-            });
+            if (confirm('Bạn có chắc chắn muốn xóa voucher này?')) {
+                await deleteVoucher(voucherCode);
+            }
         });
     });
 }
@@ -2371,7 +2278,7 @@ async function renderWarrantyPackagesList() {
         packageCard.dataset.packageId = pkg.id;
         packageCard.innerHTML = `
             <h4 class="font-semibold text-lg text-gray-900">${pkg.name}</h4>
-            <p class="text-gray-700">Giá sản phẩm: <span class="font-bold">${formatCurrency(pkg.price)}</span></p>
+            <p class="text-gray-700">Giá gốc: <span class="font-bold">${formatCurrency(pkg.price)}</span></p>
             ${pkg.discount > 0 ? `<p class="text-green-600">Giảm giá: ${pkg.discount}%</p>` : ''}
             <p class="text-xl font-bold text-blue-700">Giá cuối: ${formatCurrency(pkg.price - (pkg.price * pkg.discount / 100))}</p>
         `;
@@ -2410,12 +2317,9 @@ async function renderWarrantyPackagesList() {
                 return;
             }
             const packageId = e.target.dataset.packageId;
-            // Thay thế confirm bằng showConfirmModal
-            showConfirmModal('Bạn có chắc chắn muốn xóa gói bảo hành này?', async (confirmed) => {
-                if (confirmed) {
-                    await deleteWarrantyPackage(packageId);
-                }
-            });
+            if (confirm('Bạn có chắc chắn muốn xóa gói bảo hành này?')) {
+                await deleteWarrantyPackage(packageId);
+            }
         });
     });
 }
@@ -2702,7 +2606,7 @@ adminConfirmVatPaymentBtn.addEventListener('click', async () => {
         console.error("Error admin confirming VAT payment:", error);
         showMessage(`Lỗi khi admin xác nhận thanh toán VAT: ${error.message}`, 'error');
     } finally {
-        hideLoading();
+        hideLoading(); // Ẩn hiệu ứng tải
     }
 });
 
@@ -2788,8 +2692,7 @@ confirmWarrantyPaymentBtn.addEventListener('click', async () => {
         showMessage('Yêu cầu mua gói bảo hành của bạn đang chờ admin xác nhận!', 'info');
         closeModal(paymentWarrantyModal);
         renderOrders(currentOrderForWarranty.status);
-    }
-    catch (error) {
+    } catch (error) {
         console.error("Error confirming warranty payment:", error);
         showMessage(`Lỗi khi xác nhận mua gói bảo hành: ${error.message}`, 'error');
     } finally {
@@ -3176,3 +3079,4 @@ document.getElementById('open-address-in-map-btn').addEventListener('click', () 
         showMessage('Vui lòng cập nhật địa chỉ cửa hàng trong cài đặt trước.', 'info');
     }
 });
+

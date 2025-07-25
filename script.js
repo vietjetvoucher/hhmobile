@@ -51,21 +51,96 @@ document.body.appendChild(loadingOverlay);
 
 const messageDisplay = document.createElement('div');
 messageDisplay.id = 'messageDisplay';
-messageDisplay.className = 'message hidden fixed top-24 right-6 p-4 rounded-lg shadow-lg z-50';
+// Cập nhật các lớp CSS để thông báo nổi bật hơn và có hiệu ứng mờ dần
+messageDisplay.className = 'message hidden fixed p-4 rounded-lg shadow-lg z-50 top-1/4 left-1/2 transform -translate-x-1/2 opacity-0 transition-all duration-500 ease-in-out';
 document.body.appendChild(messageDisplay);
+
+// New: Confirmation Modal elements
+const confirmModal = document.createElement('div');
+confirmModal.id = 'confirm-modal';
+confirmModal.className = 'fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center hidden z-50';
+confirmModal.innerHTML = `
+    <div class="bg-white p-6 rounded-lg shadow-xl w-80">
+        <p id="confirm-message" class="mb-4 text-lg font-semibold text-gray-800"></p>
+        <div class="flex justify-end space-x-3">
+            <button id="confirm-cancel-btn" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-full transition-colors duration-200">Hủy</button>
+            <button id="confirm-ok-btn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-full transition-colors duration-200">Xác nhận</button>
+        </div>
+    </div>
+`;
+document.body.appendChild(confirmModal);
+
+const confirmMessageElement = document.getElementById('confirm-message');
+const confirmOkBtn = document.getElementById('confirm-ok-btn');
+const confirmCancelBtn = document.getElementById('confirm-cancel-btn');
+
+let confirmCallback = null; // To store the callback for the confirmation modal
 
 function showLoading() { loadingOverlay.classList.remove('hidden'); }
 function hideLoading() { loadingOverlay.classList.add('hidden'); }
+
+// Cập nhật hàm showMessage để thêm hiệu ứng mờ dần và vị trí
 function showMessage(message, type = 'info') {
     messageDisplay.textContent = message;
-    messageDisplay.className = `message ${type} fixed top-24 right-6 p-4 rounded-lg shadow-lg z-50`;
-    messageDisplay.classList.remove('hidden');
+    // Xóa các lớp CSS cũ và đặt lại các lớp cơ bản cho sự chuyển đổi nhất quán
+    messageDisplay.className = `message fixed p-4 rounded-lg shadow-lg z-50
+                                top-1/4 left-1/2 transform -translate-x-1/2
+                                opacity-0 transition-all duration-500 ease-in-out`;
+
+    // Thêm các lớp CSS cho từng loại thông báo
+    if (type === 'success') {
+        messageDisplay.classList.add('bg-green-500', 'text-white');
+    } else if (type === 'error') {
+        messageDisplay.classList.add('bg-red-500', 'text-white');
+    } else { // info hoặc mặc định
+        messageDisplay.classList.add('bg-blue-500', 'text-white');
+    }
+
+    messageDisplay.classList.remove('hidden'); // Hiển thị phần tử (nhưng vẫn trong suốt)
+    // Dùng một khoảng thời gian chờ nhỏ để cho phép trình duyệt vẽ lại trước khi thêm opacity-100, kích hoạt chuyển đổi
     setTimeout(() => {
-        messageDisplay.classList.add('hidden');
-        messageDisplay.textContent = '';
-        messageDisplay.className = 'message hidden fixed top-24 right-6 p-4 rounded-lg shadow-lg z-50';
-    }, 3000);
+        messageDisplay.classList.add('opacity-100');
+    }, 10); // Độ trễ nhỏ để áp dụng chuyển đổi CSS
+
+    // Đặt thời gian để ẩn thông báo
+    setTimeout(() => {
+        messageDisplay.classList.remove('opacity-100'); // Bắt đầu hiệu ứng mờ dần
+        // Sau khi mờ dần, ẩn hoàn toàn và xóa văn bản
+        setTimeout(() => {
+            messageDisplay.classList.add('hidden'); // Ẩn hoàn toàn
+            messageDisplay.textContent = '';
+        }, 500); // Khớp với thời gian chuyển đổi
+    }, 3000); // Thông báo hiển thị đầy đủ trong 3 giây
 }
+
+// New: Function to show custom confirmation modal
+function showConfirmModal(message, onConfirm) {
+    confirmMessageElement.textContent = message;
+    confirmModal.classList.remove('hidden');
+    document.body.classList.add('overflow-hidden');
+    confirmCallback = onConfirm;
+}
+
+function closeConfirmModal() {
+    confirmModal.classList.add('hidden');
+    document.body.classList.remove('overflow-hidden');
+    confirmCallback = null;
+}
+
+confirmOkBtn.addEventListener('click', () => {
+    if (confirmCallback) {
+        confirmCallback(true);
+    }
+    closeConfirmModal();
+});
+
+confirmCancelBtn.addEventListener('click', () => {
+    if (confirmCallback) {
+        confirmCallback(false);
+    }
+    closeConfirmModal();
+});
+
 
 const shopNameDisplay = document.getElementById('shop-name-display');
 const shopAddressDisplay = document.getElementById('shop-address-display');
@@ -998,14 +1073,13 @@ applyVoucherBtn.addEventListener('click', () => {
     const voucher = shopDataCache.vouchers[voucherCode];
 
     if (voucher) {
-        // Đây là phần code mới được thêm vào để kiểm tra voucher admin
+        // Kiểm tra voucher admin: chỉ cho phép admin dùng
         if (voucher.isAdminVoucher && (!loggedInUser || !loggedInUser.isAdmin)) {
             currentAppliedVoucher = null;
             showMessage('Mã voucher này chỉ dành cho quản trị viên.', 'error');
             calculateProductPrice();
-            return; // Dừng xử lý nếu là voucher admin và người dùng không phải admin
+            return;
         }
-        // Kết thúc phần code mới
 
         const now = new Date();
         const expiryTime = new Date(voucher.expiry);
@@ -1016,7 +1090,7 @@ applyVoucherBtn.addEventListener('click', () => {
                 type: voucher.type,
                 value: voucher.value,
                 expiry: voucher.expiry,
-                displayValue: voucher.displayValue // Lưu giá trị hiển thị để dùng trong tin nhắn
+                displayValue: voucher.displayValue // Store display value for message
             };
             showMessage(`Áp dụng voucher thành công!`, 'success');
         } else {
@@ -1559,9 +1633,12 @@ async function renderOrders(status) {
                 button.addEventListener('click', async (e) => {
                     const orderId = e.target.dataset.orderId;
                     const customerUserId = e.target.dataset.customerUserId;
-                    if (confirm('Bạn có chắc chắn muốn hủy đơn hàng này?')) {
-                        await deleteOrder(orderId, customerUserId);
-                    }
+                    // Thay thế confirm bằng showConfirmModal
+                    showConfirmModal('Bạn có chắc chắn muốn hủy đơn hàng này?', async (confirmed) => {
+                        if (confirmed) {
+                            await deleteOrder(orderId, customerUserId);
+                        }
+                    });
                 });
             });
 
@@ -1845,9 +1922,12 @@ function renderProductManagementList() {
                 return;
             }
             const productId = e.target.dataset.productId;
-            if (confirm('Bạn có chắc chắn muốn xóa sản phẩm này?')) {
-                await deleteProduct(productId);
-            }
+            // Thay thế confirm bằng showConfirmModal
+            showConfirmModal('Bạn có chắc chắn muốn xóa sản phẩm này?', async (confirmed) => {
+                if (confirmed) {
+                    await deleteProduct(productId);
+                }
+            });
         });
     });
 }
@@ -2096,9 +2176,12 @@ async function renderVouchersList() {
                 return;
             }
             const voucherCode = e.target.dataset.voucherCode;
-            if (confirm('Bạn có chắc chắn muốn xóa voucher này?')) {
-                await deleteVoucher(voucherCode);
-            }
+            // Thay thế confirm bằng showConfirmModal
+            showConfirmModal('Bạn có chắc chắn muốn xóa voucher này?', async (confirmed) => {
+                if (confirmed) {
+                    await deleteVoucher(voucherCode);
+                }
+            });
         });
     });
 }
@@ -2316,9 +2399,12 @@ async function renderWarrantyPackagesList() {
                 return;
             }
             const packageId = e.target.dataset.packageId;
-            if (confirm('Bạn có chắc chắn muốn xóa gói bảo hành này?')) {
-                await deleteWarrantyPackage(packageId);
-            }
+            // Thay thế confirm bằng showConfirmModal
+            showConfirmModal('Bạn có chắc chắn muốn xóa gói bảo hành này?', async (confirmed) => {
+                if (confirmed) {
+                    await deleteWarrantyPackage(packageId);
+                }
+            });
         });
     });
 }
@@ -2691,7 +2777,8 @@ confirmWarrantyPaymentBtn.addEventListener('click', async () => {
         showMessage('Yêu cầu mua gói bảo hành của bạn đang chờ admin xác nhận!', 'info');
         closeModal(paymentWarrantyModal);
         renderOrders(currentOrderForWarranty.status);
-    } catch (error) {
+    }
+    catch (error) {
         console.error("Error confirming warranty payment:", error);
         showMessage(`Lỗi khi xác nhận mua gói bảo hành: ${error.message}`, 'error');
     } finally {
@@ -3078,4 +3165,3 @@ document.getElementById('open-address-in-map-btn').addEventListener('click', () 
         showMessage('Vui lòng cập nhật địa chỉ cửa hàng trong cài đặt trước.', 'info');
     }
 });
-

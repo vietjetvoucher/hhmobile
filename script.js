@@ -982,7 +982,7 @@ function calculateProductPrice() {
         );
     }
 
-    let finalPrice = priceAfterOptions;
+    let finalPrice = priceAfterOptions; // This is the price after options, before any voucher
     let remainingQuantity = 'N/A';
     let soldQuantity = 'N/A';
 
@@ -1014,20 +1014,20 @@ function calculateProductPrice() {
     // Customer pays 20% of the total VAT
     let customerVatPortion = totalVatForProduct * 0.20;
 
-    let discountedPrice = finalPrice;
+    let discountedPrice = finalPrice; // Initialize discountedPrice with finalPrice
 
     // Check voucher expiry and apply discount
     // This part will now rely on updateVoucherCountdown for continuous updates
+    let isVoucherAppliedAndValid = false;
     if (currentAppliedVoucher) {
         const now = new Date();
         const expiryTime = new Date(currentAppliedVoucher.expiry);
         if (expiryTime > now) {
+            isVoucherAppliedAndValid = true;
             if (currentAppliedVoucher.type === 'percentage') {
                 discountedPrice = finalPrice * (1 - currentAppliedVoucher.value);
             } else if (currentAppliedVoucher.type === 'fixed') {
                 discountedPrice = finalPrice - currentAppliedVoucher.value;
-            } else if (currentAppliedVoucher.type === 'freeship') {
-                // Freeship logic handled at order creation/payment
             }
             // Start or restart the countdown interval
             if (voucherCountdownInterval) {
@@ -1053,14 +1053,22 @@ function calculateProductPrice() {
         }
     }
 
-    currentCalculatedPrice = discountedPrice; // This is the price after product options and voucher, before customer's VAT portion
+    currentCalculatedPrice = isVoucherAppliedAndValid ? discountedPrice : finalPrice; // Store the actual price to be paid for ordering
 
-    modalProductPriceDisplay.textContent = formatCurrency(finalPrice); // Display price before customer VAT portion
-    modalProductVATDisplay.textContent = formatCurrency(customerVatPortion); // Display customer's VAT portion (2% of original)
+    // Update modalProductPriceDisplay
+    modalProductPriceDisplay.textContent = formatCurrency(finalPrice);
+    if (isVoucherAppliedAndValid) {
+        modalProductPriceDisplay.classList.add('line-through', 'text-gray-500'); // Add strikethrough and gray out original price
+    } else {
+        modalProductPriceDisplay.classList.remove('line-through', 'text-gray-500');
+    }
+
+    modalProductVATDisplay.textContent = formatCurrency(customerVatPortion);
     modalProductSold.textContent = soldQuantity;
     modalProductRemaining.textContent = remainingQuantity;
 
-    if (currentAppliedVoucher) {
+    // Update modalProductDiscountDisplay
+    if (isVoucherAppliedAndValid) {
         modalProductDiscountDisplay.classList.remove('hidden');
         modalProductDiscountDisplay.textContent = `Giá sau voucher: ${formatCurrency(discountedPrice)}`;
     } else {

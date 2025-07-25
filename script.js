@@ -213,7 +213,7 @@ const voucherExpiryMessage = document.getElementById('voucher-expiry-message'); 
 const orderIdDisplay = document.getElementById('order-id-display');
 const orderProductsSummary = document.getElementById('order-products-summary');
 const customerNameInput = document.getElementById('customer-name');
-const customerPhoneInput = document.getElementById('customer-phone');
+const customerPhoneInput = document = document.getElementById('customer-phone');
 const customerAddressInput = document.getElementById('customer-address');
 const orderLocationInput = document.getElementById('order-location');
 const estimatedDeliveryDateInput = document.getElementById('estimated-delivery-date');
@@ -286,7 +286,7 @@ const qrCodeImageURLInput = document.getElementById('qr-code-image-url-input');
 const uploadQrCodeBtn = document.getElementById('upload-qr-code-btn');
 const shippingUnitNameInput = document.getElementById('shipping-unit-name-input');
 const shippingUnitImageURLInput = document.getElementById('shipping-unit-image-url-input');
-const uploadShippingUnitImageBtn = document = document.getElementById('upload-shipping-unit-image-btn');
+const uploadShippingUnitImageBtn = document.getElementById('upload-shipping-unit-image-btn');
 // New element for admin email input
 const adminEmailInput = document.getElementById('admin-email-input');
 
@@ -362,7 +362,7 @@ const clearSearchCreatedOrdersBtn = document.getElementById('clear-search-create
 const searchShippingOrdersInput = document.getElementById('search-shipping-orders');
 const clearSearchShippingOrdersBtn = document.getElementById('clear-search-shipping-orders');
 const searchDeliveredOrdersInput = document.getElementById('search-delivered-orders');
-const clearSearchDeliveredOrdersBtn = document.getElementById('clear-search-delivered-orders');
+const clearSearchDeliveredOrdersBtn = document.getElementById('clear-search-delivered-experiments');
 
 
 let currentSelectedProduct = null;
@@ -2702,7 +2702,7 @@ adminConfirmVatPaymentBtn.addEventListener('click', async () => {
         console.error("Error admin confirming VAT payment:", error);
         showMessage(`Lỗi khi admin xác nhận thanh toán VAT: ${error.message}`, 'error');
     } finally {
-        hideLoading(); // Ẩn hiệu ứng tải
+        hideLoading();
     }
 });
 

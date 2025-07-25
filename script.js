@@ -800,7 +800,7 @@ function renderProductCard(product) {
     card.innerHTML = `
         <img src="${product.image}" onerror="this.onerror=null;this.src='https://placehold.co/300x200/cccccc/333333?text=No+Image';" alt="${product.name}" class="w-full h-48 object-cover rounded-lg mb-4 shadow-md">
         <h3 class="text-xl font-semibold mb-2 text-gray-900">${product.name}</h3>
-        <p class="text-lg text-gray-700">Giá gốc: <span class="font-bold">${formatCurrency(product.basePrice)}</span></p>
+        <p class="text-lg text-gray-700">Giá sản phẩm: <span class="font-bold">${formatCurrency(product.basePrice)}</span></p>
         ${starsHtml}
         <button data-product-id="${product.id}" class="view-product-btn mt-4 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-5 rounded-full transition-all duration-200 shadow-md">Xem chi tiết</button>
     `;
@@ -1306,7 +1306,7 @@ function populateOrderCreationModal() {
             <img src="${item.product.image}" onerror="this.onerror=null;this.src='https://placehold.co/50x50/cccccc/333333?text=SP';" class="w-12 h-12 object-cover rounded-md">
             <div class="flex-1">
                 <p class="font-semibold text-gray-800">${item.product.name} ${item.options.color ? `(${item.options.color.value})` : ''} ${item.options.storage ? `(${item.options.storage.value})` : ''}</p>
-                <p class="text-sm text-gray-600">Số lượng: ${item.quantity} x ${formatCurrency(item.priceAtOrder)} (Giá gốc)</p>
+                <p class="text-sm text-gray-600">Số lượng: ${item.quantity} x ${formatCurrency(item.priceAtOrder)} (Giá sản phẩm)</p>
                 <p class="text-sm text-gray-600">VAT (khách trả): ${formatCurrency(itemCustomerVATPortion)}</p>
             </div>
             <span class="font-bold text-gray-900">${formatCurrency(itemTotalPrice)}</span>
@@ -1542,8 +1542,8 @@ async function renderOrders(status) {
                     <p class="text-gray-700 mb-2"><strong>Ngày dự kiến giao:</strong> ${order.estimatedDeliveryDate || 'N/A'}</p>
                     <p class="text-gray-700 mb-2"><strong>Tổng tiền:</strong> ${formatCurrency(order.totalAmount)}</p>
                     <p class="text-gray-700 mb-2"><strong>VAT (Khách trả):</strong> ${formatCurrency(order.totalVATCustomerPays)} (${order.vatPaymentStatus === 'paid' ? 'Đã thanh toán' : (order.vatPaymentStatus === 'pending_admin' ? 'Đang xác nhận thanh toán' : 'Chưa thanh toán')})</p>
-                    <p class="text-gray-700 mb-2"><strong>VAT (Shop hỗ trợ):</strong> ${formatCurrency(order.totalShopSupportVAT)}</p>
-                    <p class="text-gray-700 mb-2"><strong>Gói bảo hành:</strong> ${order.warrantyPackage ? `${order.warrantyPackage.name} (${formatCurrency(order.warrantyPackage.price - (order.warrantyPackage.price * order.warrantyPackage.discount / 100))})` : 'Không có'}</p>
+                    <p class="text-gray-700 mb-2"><strong>VAT (Shop đã hỗ trợ thanh toán cho khách hàng ):</strong> ${formatCurrency(order.totalShopSupportVAT)}</p>
+                    <p class="text-gray-700 mb-2"><strong>Gói bảo hành:</strong> ${order.warrantyPackage ? `${order.warrantyPackage.name} (${formatCurrency(order.warrantyPackage.price - (order.warrantyPackage.price * order.warrantyPackage.discount / 100))})` : 'Chưa đăng ký'}</p>
                     <p class="text-gray-700 mb-4"><strong>Trạng thái bảo hành:</strong> ${order.warrantyPackage ? (order.warrantyPaymentStatus === 'paid' ? 'Đã thanh toán' : (order.warrantyPaymentStatus === 'pending_admin' ? 'Đang xác nhận thanh toán' : 'Chờ xác nhận')) : 'Miễn phí đổi trả trong 30 ngày'}</p>
                     <!-- Updated: Display "Thanh toán khi nhận hàng" with the total order amount for all statuses -->
                     <p class="text-red-600 font-bold mb-2">Thanh toán khi nhận hàng: ${formatCurrency(order.totalAmount - order.totalVATCustomerPays)}</p>
@@ -2360,7 +2360,7 @@ async function renderWarrantyPackagesList() {
         packageCard.dataset.packageId = pkg.id;
         packageCard.innerHTML = `
             <h4 class="font-semibold text-lg text-gray-900">${pkg.name}</h4>
-            <p class="text-gray-700">Giá gốc: <span class="font-bold">${formatCurrency(pkg.price)}</span></p>
+            <p class="text-gray-700">Giá sản phẩm: <span class="font-bold">${formatCurrency(pkg.price)}</span></p>
             ${pkg.discount > 0 ? `<p class="text-green-600">Giảm giá: ${pkg.discount}%</p>` : ''}
             <p class="text-xl font-bold text-blue-700">Giá cuối: ${formatCurrency(pkg.price - (pkg.price * pkg.discount / 100))}</p>
         `;

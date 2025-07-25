@@ -213,7 +213,7 @@ const voucherExpiryMessage = document.getElementById('voucher-expiry-message'); 
 const orderIdDisplay = document.getElementById('order-id-display');
 const orderProductsSummary = document.getElementById('order-products-summary');
 const customerNameInput = document.getElementById('customer-name');
-const customerPhoneInput = document = document.getElementById('customer-phone');
+const customerPhoneInput = document.getElementById('customer-phone');
 const customerAddressInput = document.getElementById('customer-address');
 const orderLocationInput = document.getElementById('order-location');
 const estimatedDeliveryDateInput = document.getElementById('estimated-delivery-date');
@@ -1274,7 +1274,7 @@ buyAllCartBtn.addEventListener('click', () => {
             color: item.selectedColor,
             storage: item.selectedStorage
         },
-        quantity: item.quantity,
+        quantity: 1,
         priceAtOrder: item.priceAtAddToCart, // Price after options and voucher
         originalPriceForVAT: item.originalPriceForVAT, // Price before VAT/discount for VAT calculation
         voucher: null

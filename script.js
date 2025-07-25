@@ -998,6 +998,15 @@ applyVoucherBtn.addEventListener('click', () => {
     const voucher = shopDataCache.vouchers[voucherCode];
 
     if (voucher) {
+        // Đây là phần code mới được thêm vào để kiểm tra voucher admin
+        if (voucher.isAdminVoucher && (!loggedInUser || !loggedInUser.isAdmin)) {
+            currentAppliedVoucher = null;
+            showMessage('Mã voucher này chỉ dành cho quản trị viên.', 'error');
+            calculateProductPrice();
+            return; // Dừng xử lý nếu là voucher admin và người dùng không phải admin
+        }
+        // Kết thúc phần code mới
+
         const now = new Date();
         const expiryTime = new Date(voucher.expiry);
 
@@ -1007,7 +1016,7 @@ applyVoucherBtn.addEventListener('click', () => {
                 type: voucher.type,
                 value: voucher.value,
                 expiry: voucher.expiry,
-                displayValue: voucher.displayValue // Store display value for message
+                displayValue: voucher.displayValue // Lưu giá trị hiển thị để dùng trong tin nhắn
             };
             showMessage(`Áp dụng voucher thành công!`, 'success');
         } else {

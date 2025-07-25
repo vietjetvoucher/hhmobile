@@ -286,7 +286,7 @@ const qrCodeImageURLInput = document.getElementById('qr-code-image-url-input');
 const uploadQrCodeBtn = document.getElementById('upload-qr-code-btn');
 const shippingUnitNameInput = document.getElementById('shipping-unit-name-input');
 const shippingUnitImageURLInput = document.getElementById('shipping-unit-image-url-input');
-const uploadShippingUnitImageBtn = document.getElementById('upload-shipping-unit-image-btn');
+const uploadShippingUnitImageBtn = document = document.getElementById('upload-shipping-unit-image-btn');
 // New element for admin email input
 const adminEmailInput = document.getElementById('admin-email-input');
 
@@ -853,6 +853,9 @@ function displayProductDetail(product) {
     modalProductDescription.textContent = product.description;
     productOptionsContainer.innerHTML = '';
     voucherExpiryMessage.classList.add('hidden'); // Hide expiry message by default
+
+    // Explicitly remove line-through on display of new product detail
+    modalProductPriceDisplay.classList.remove('line-through', 'text-gray-500'); 
 
     // Clear any existing countdown interval when displaying a new product detail
     if (voucherCountdownInterval) {

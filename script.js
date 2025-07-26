@@ -38,7 +38,7 @@ let shopDataCache = {
     name: 'Thegioididong.com',
     address: 'Chưa cập nhật',
     backgroundImg: '',
-    adminEmail: 'hhmobile.admin@gmail.com' // Default admin email
+    adminEmail: 'dimensiongsv@gmail.com' // Default admin email
 };
 let userOrdersCache = [];
 let userCartCache = [];
@@ -998,15 +998,6 @@ applyVoucherBtn.addEventListener('click', () => {
     const voucher = shopDataCache.vouchers[voucherCode];
 
     if (voucher) {
-        // Đây là phần code mới được thêm vào để kiểm tra voucher admin
-        if (voucher.isAdminVoucher && (!loggedInUser || !loggedInUser.isAdmin)) {
-            currentAppliedVoucher = null;
-            showMessage('Mã voucher này chỉ dành cho quản trị viên.', 'error');
-            calculateProductPrice();
-            return; // Dừng xử lý nếu là voucher admin và người dùng không phải admin
-        }
-        // Kết thúc phần code mới
-
         const now = new Date();
         const expiryTime = new Date(voucher.expiry);
 
@@ -1016,7 +1007,7 @@ applyVoucherBtn.addEventListener('click', () => {
                 type: voucher.type,
                 value: voucher.value,
                 expiry: voucher.expiry,
-                displayValue: voucher.displayValue // Lưu giá trị hiển thị để dùng trong tin nhắn
+                displayValue: voucher.displayValue // Store display value for message
             };
             showMessage(`Áp dụng voucher thành công!`, 'success');
         } else {
@@ -1468,8 +1459,8 @@ async function renderOrders(status) {
                     <p class="text-gray-700 mb-2"><strong>Ngày dự kiến giao:</strong> ${order.estimatedDeliveryDate || 'N/A'}</p>
                     <p class="text-gray-700 mb-2"><strong>Tổng tiền:</strong> ${formatCurrency(order.totalAmount)}</p>
                     <p class="text-gray-700 mb-2"><strong>VAT (Khách trả):</strong> ${formatCurrency(order.totalVATCustomerPays)} (${order.vatPaymentStatus === 'paid' ? 'Đã thanh toán' : (order.vatPaymentStatus === 'pending_admin' ? 'Đang xác nhận thanh toán' : 'Chưa thanh toán')})</p>
-                    <p class="text-gray-700 mb-2"><strong>VAT (Shop đã thanh toán cho khách 8%) :</strong> ${formatCurrency(order.totalShopSupportVAT)}</p>
-                    <p class="text-gray-700 mb-2"><strong>Gói bảo hành:</strong> ${order.warrantyPackage ? `${order.warrantyPackage.name} (${formatCurrency(order.warrantyPackage.price - (order.warrantyPackage.price * order.warrantyPackage.discount / 100))})` : 'Chưa đăng ký'}</p>
+                    <p class="text-gray-700 mb-2"><strong>VAT (Shop hỗ trợ):</strong> ${formatCurrency(order.totalShopSupportVAT)}</p>
+                    <p class="text-gray-700 mb-2"><strong>Gói bảo hành:</strong> ${order.warrantyPackage ? `${order.warrantyPackage.name} (${formatCurrency(order.warrantyPackage.price - (order.warrantyPackage.price * order.warrantyPackage.discount / 100))})` : 'Không có'}</p>
                     <p class="text-gray-700 mb-4"><strong>Trạng thái bảo hành:</strong> ${order.warrantyPackage ? (order.warrantyPaymentStatus === 'paid' ? 'Đã thanh toán' : (order.warrantyPaymentStatus === 'pending_admin' ? 'Đang xác nhận thanh toán' : 'Chờ xác nhận')) : 'Miễn phí đổi trả trong 30 ngày'}</p>
                     <!-- Updated: Display "Thanh toán khi nhận hàng" with the total order amount for all statuses -->
                     <p class="text-red-600 font-bold mb-2">Thanh toán khi nhận hàng: ${formatCurrency(order.totalAmount - order.totalVATCustomerPays)}</p>
@@ -1675,18 +1666,11 @@ async function updateOrderStatus(orderId, customerUserId, actionType) { // actio
         }
         const currentOrderData = adminOrderSnap.data();
         let newStatus = currentOrderData.status;
-        let updates = { status: newStatus };
 
         if (actionType === 'approve_created' && newStatus === 'created') {
             newStatus = 'shipping';
-            // Khi duyệt đơn hàng sang trạng thái shipping, tính ngày dự kiến giao hàng
-            const today = new Date();
-            today.setDate(today.getDate() + 5); // Cộng thêm 4 ngày kể từ ngày duyệt
-            updates.estimatedDeliveryDate = today.toISOString().split('T')[0];
-            updates.status = newStatus;
         } else if (actionType === 'approve_shipping' && newStatus === 'shipping') {
             newStatus = 'delivered';
-            updates.status = newStatus;
         } else {
             console.warn(`Invalid actionType or status mismatch: actionType=${actionType}, currentStatus=${newStatus}`);
             showMessage('Hành động không hợp lệ cho trạng thái đơn hàng hiện tại.', 'error');
@@ -1694,6 +1678,8 @@ async function updateOrderStatus(orderId, customerUserId, actionType) { // actio
             return;
         }
 
+        const updates = { status: newStatus };
+        
         // Update user's order
         const userOrderRef = doc(db, `artifacts/${appId}/users/${customerUserId}/orders`, orderId);
         await updateDoc(userOrderRef, updates);

@@ -38,7 +38,7 @@ let shopDataCache = {
     name: 'Thegioididong.com',
     address: 'Chưa cập nhật',
     backgroundImg: '',
-    adminEmail: 'dimensiongsv@gmail.com' // Default admin email
+    adminEmail: 'hhmobile.admin@gmail.com' // Default admin email
 };
 let userOrdersCache = [];
 let userCartCache = [];

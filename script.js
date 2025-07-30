@@ -162,8 +162,7 @@ function showNotification(message, type = 'info', iconClass = '') {
 }
 
 
-const shopNameDisplay = document.getElementById('shop-name-display');
-const shopAddressDisplay = document.getElementById('shop-address-display');
+// const shopNameDisplay = document.getElementById('shop-name-display'); // Duplicate declaration removed
 const pageTitle = document.getElementById('page-title');
 const bodyElement = document.body;
 const advertisementBannerContainer = document.getElementById('advertisement-banner-container');
@@ -202,8 +201,8 @@ const openManagementModalBtn = document.getElementById('open-management-modal-bt
 const openSettingsModalBtn = document.getElementById('open-settings-modal-btn');
 const openShopAnalyticsModalBtn = document.getElementById('open-shop-analytics-modal-btn');
 const openCartModalBtn = document.getElementById('open-cart-modal-btn');
-// const loginStatusBtn = document.getElementById('login-status-btn'); // Already defined above
-// const openProfileModalBtn = document.getElementById('open-profile-modal-btn'); // Already defined above
+// const loginStatusBtn = document.getElementById('login-status-btn'); // Duplicate declaration removed
+// const openProfileModalBtn = document.getElementById('open-profile-modal-btn'); // Duplicate declaration removed
 
 const productListSection = document.getElementById('product-list-section');
 const createdOrdersSection = document.getElementById('created-orders-section');
@@ -575,9 +574,9 @@ async function loadShopSettingsToUI() {
     bankNameInput.value = shopDataCache.bankDetails.bankName || '';
     accountNumberInput.value = shopDataCache.bankDetails.accountNumber || '';
     accountHolderInput.value = shopDataCache.bankDetails.accountHolder || '';
-    qrCodeImageURLInput.value = shopDataCache.bankDetails.qrCodeImage || '';
+    qrCodeImageURLInput.value = shopDataCache.bankDetails.qrCodeImage ? shopDataCache.bankDetails.qrCodeImage : '';
     shippingUnitNameInput.value = shopDataCache.shippingUnit.name || 'GHN Express';
-    shippingUnitImageURLInput.value = shopDataCache.shippingUnit.image || '';
+    shippingUnitImageURLInput.value = shopDataCache.shippingUnit.image ? shopDataCache.shippingUnit.image : '';
     // Đảm bảo rằng adminEmailInput tồn tại trước khi truy cập .value
     if (adminEmailInput) {
         adminEmailInput.value = shopDataCache.adminEmail || ''; // Load admin email

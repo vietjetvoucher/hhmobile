@@ -1,96 +1,31 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-import {
-    getAuth,
-    signInAnonymously,
-    signInWithCustomToken,
-    onAuthStateChanged,
-    createUserWithEmailAndPassword,
-    signInWithEmailAndPassword,
-    signOut,
-    updateProfile,
-    updatePassword,
-    reauthenticateWithCredential,
-    EmailAuthProvider,
-    sendPasswordResetEmail
-} from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-import {
-    getFirestore,
-    doc,
-    getDoc,
-    setDoc,
-    collection,
-    query,
-    where,
-    getDocs,
-    addDoc,
-    updateDoc,
-    deleteDoc,
-    onSnapshot,
-    serverTimestamp
-} from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { getAuth, signInWithCustomToken, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { getFirestore, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc, onSnapshot, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-// Firebase configuration variables (provided by the environment)
-const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
-const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+// Global variables provided by the Canvas environment
+// __app_id: The unique ID for the current application instance.
+// __firebase_config: Firebase configuration object (JSON string) for initializing the app.
+// __initial_auth_token: Custom Firebase authentication token for initial sign-in.
 const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
+    // User's provided Firebase configuration for local testing
+    apiKey: "AIzaSyBPjpG1V3HpR4wCFEXth1byWN0q9-9jWiM",
+    authDomain: "hhmobile-df259.firebaseapp.com",
+    projectId: "hhmobile-df259",
+    storageBucket: "hhmobile-df259.firebaseapp.com",
+    messagingSenderId: "273294651647",
+    appId: "1:273294651647:web:02bcd7be6f760cd6849cca",
+    measurementId: "G-YSJ062B717"
+};
+const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null; // Corrected variable name
 
-// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-// Global variables for Firebase instances and user ID
-let currentUserId = null;
-let isAdmin = false; // Flag to check if the current user is an admin
-
-// DOM Elements
-const shopNameDisplay = document.getElementById('shop-name-display');
-const shopAddressDisplay = document.getElementById('shop-address-display');
-const openAddressInMapBtn = document.getElementById('open-address-in-map-btn');
-const loginStatusBtn = document.getElementById('login-status-btn');
-const openProfileModalBtn = document.getElementById('open-profile-modal-btn');
-const profileModal = document.getElementById('profile-modal');
-const closeProfileModal = document.getElementById('close-profile-modal');
-const profileUsernameInput = document.getElementById('profile-username');
-const profileFullnameInput = document.getElementById('profile-fullname');
-const profilePhoneInput = document.getElementById('profile-phone');
-const profileProvinceInput = document.getElementById('profile-province');
-const saveProfileBtn = document.getElementById('save-profile-btn');
-const profileErrorMessage = document.getElementById('profile-error-message');
-const changePasswordBtn = document.getElementById('change-password-btn');
-const forgotPasswordBtnProfile = document.getElementById('forgot-password-btn-profile');
-const closeProfileModalBtn = document.getElementById('close-profile-modal-btn');
-
-const changePasswordModal = document.getElementById('change-password-modal');
-const closeChangePasswordModal = document.getElementById('close-change-password-modal');
-const currentPasswordInput = document.getElementById('current-password');
-const newPasswordInput = document.getElementById('new-password');
-const confirmNewPasswordInput = document.getElementById('confirm-new-password');
-const submitChangePasswordBtn = document.getElementById('submit-change-password-btn');
-const changePasswordErrorMessage = document.getElementById('change-password-error-message');
-
-const loginRegisterModal = document.getElementById('login-register-modal');
-const closeLoginRegisterModal = document.getElementById('close-login-register-modal');
-const authModalTitle = document.getElementById('auth-modal-title');
-const loginForm = document.getElementById('login-form');
-const registerForm = document.getElementById('register-form');
-const loginUsernameInput = document.getElementById('login-username');
-const loginPasswordInput = document.getElementById('login-password');
-const loginSubmitBtn = document.getElementById('login-submit-btn');
-const loginErrorMessage = document.getElementById('login-error-message');
-const showRegisterFormLink = document.getElementById('show-register-form-link');
-const showLoginFormLink = document.getElementById('show-login-form-link');
-const registerUsernameInput = document.getElementById('register-username');
-const registerPasswordInput = document.getElementById('register-password');
-const registerConfirmPasswordInput = document.getElementById('register-confirm-password');
-const registerFullnameInput = document.getElementById('register-fullname');
-const registerPhoneInput = document.getElementById('register-phone'); // Corrected this line
-const registerProvinceInput = document.getElementById('register-province');
-const registerSubmitBtn = document.getElementById('register-submit-btn');
-const registerErrorMessage = document.getElementById('register-error-message');
-const forgotPasswordLinkLogin = document.getElementById('forgot-password-link-login'); // New: Forgot password link in login modal
-
 let loggedInUser = null;
+let currentUserId = null;
+// ADMIN_EMAIL will now be fetched from Firestore
 const DEFAULT_WAREHOUSE_ADDRESS = "194 Đ. Lê Duẩn, Khâm Thiên, Đống Đa, Hà Nội";
 
 let shopDataCache = {
@@ -162,7 +97,8 @@ function showNotification(message, type = 'info', iconClass = '') {
 }
 
 
-// const shopNameDisplay = document.getElementById('shop-name-display'); // Duplicate declaration removed
+const shopNameDisplay = document.getElementById('shop-name-display');
+const shopAddressDisplay = document.getElementById('shop-address-display');
 const pageTitle = document.getElementById('page-title');
 const bodyElement = document.body;
 const advertisementBannerContainer = document.getElementById('advertisement-banner-container');
@@ -191,7 +127,7 @@ const closePaymentVATModalBtn = document.getElementById('close-payment-vat-modal
 const closeOrderTrackingModalBtn = document.getElementById('close-order-tracking-modal');
 const closePaymentWarrantyModalBtn = document.getElementById('close-payment-warranty-modal');
 const closeLoginRegisterModalBtn = document.getElementById('close-login-register-modal');
-// const closeProfileModalBtn = document.getElementById('close-profile-modal-btn'); // Already defined above
+const closeProfileModalBtn = document.getElementById('close-profile-modal-btn');
 
 const showProductsBtn = document.getElementById('show-products-btn');
 const showCreatedOrdersBtn = document.getElementById('show-created-orders-btn');
@@ -201,8 +137,8 @@ const openManagementModalBtn = document.getElementById('open-management-modal-bt
 const openSettingsModalBtn = document.getElementById('open-settings-modal-btn');
 const openShopAnalyticsModalBtn = document.getElementById('open-shop-analytics-modal-btn');
 const openCartModalBtn = document.getElementById('open-cart-modal-btn');
-// const loginStatusBtn = document.getElementById('login-status-btn'); // Duplicate declaration removed
-// const openProfileModalBtn = document.getElementById('open-profile-modal-btn'); // Duplicate declaration removed
+const loginStatusBtn = document.getElementById('login-status-btn');
+const openProfileModalBtn = document.getElementById('open-profile-modal-btn');
 
 const productListSection = document.getElementById('product-list-section');
 const createdOrdersSection = document.getElementById('created-orders-section');
@@ -352,6 +288,33 @@ const accountHolderDisplayWarranty = document.getElementById('account-holder-dis
 const warrantyPaymentTotal = document.getElementById('warranty-payment-total');
 const confirmWarrantyPaymentBtn = document.getElementById('confirm-warranty-payment-btn');
 const adminConfirmWarrantyBtn = document.getElementById('admin-confirm-warranty-btn');
+
+const loginRegisterModal = document.getElementById('login-register-modal');
+const authModalTitle = document.getElementById('auth-modal-title');
+const loginForm = document.getElementById('login-form');
+const registerForm = document.getElementById('register-form');
+const showRegisterFormLink = document.getElementById('show-register-form-link');
+const showLoginFormLink = document.getElementById('show-login-form-link');
+const loginUsernameInput = document.getElementById('login-username');
+const loginPasswordInput = document.getElementById('login-password');
+const loginSubmitBtn = document.getElementById('login-submit-btn');
+const loginErrorMessage = document.getElementById('login-error-message');
+const registerUsernameInput = document.getElementById('register-username');
+const registerPasswordInput = document.getElementById('register-password');
+const registerConfirmPasswordInput = document.getElementById('register-confirm-password');
+const registerFullnameInput = document.getElementById('register-fullname');
+const registerPhoneInput = document.getElementById('register-phone'); // Corrected this line
+const registerProvinceInput = document.getElementById('register-province');
+const registerSubmitBtn = document.getElementById('register-submit-btn');
+const registerErrorMessage = document.getElementById('register-error-message');
+
+const profileModal = document.getElementById('profile-modal');
+const profileUsernameInput = document.getElementById('profile-username');
+const profileFullnameInput = document.getElementById('profile-fullname');
+const profilePhoneInput = document.getElementById('profile-phone');
+const profileProvinceInput = document.getElementById('profile-province');
+const saveProfileBtn = document.getElementById('save-profile-btn');
+const profileErrorMessage = document.getElementById('profile-error-message');
 
 // Search inputs for order sections
 const searchCreatedOrdersInput = document.getElementById('search-created-orders');
@@ -574,9 +537,9 @@ async function loadShopSettingsToUI() {
     bankNameInput.value = shopDataCache.bankDetails.bankName || '';
     accountNumberInput.value = shopDataCache.bankDetails.accountNumber || '';
     accountHolderInput.value = shopDataCache.bankDetails.accountHolder || '';
-    qrCodeImageURLInput.value = shopDataCache.bankDetails.qrCodeImage ? shopDataCache.bankDetails.qrCodeImage : '';
+    qrCodeImageURLInput.value = shopDataCache.bankDetails.qrCodeImage || '';
     shippingUnitNameInput.value = shopDataCache.shippingUnit.name || 'GHN Express';
-    shippingUnitImageURLInput.value = shopDataCache.shippingUnit.image ? shopDataCache.shippingUnit.image : '';
+    shippingUnitImageURLInput.value = shopDataCache.shippingUnit.image || '';
     // Đảm bảo rằng adminEmailInput tồn tại trước khi truy cập .value
     if (adminEmailInput) {
         adminEmailInput.value = shopDataCache.adminEmail || ''; // Load admin email
@@ -688,8 +651,6 @@ closeOrderTrackingModalBtn.addEventListener('click', () => closeModal(orderTrack
 closePaymentWarrantyModalBtn.addEventListener('click', () => closeModal(paymentWarrantyModal));
 closeLoginRegisterModalBtn.addEventListener('click', () => closeModal(loginRegisterModal));
 closeProfileModalBtn.addEventListener('click', () => closeModal(profileModal));
-closeChangePasswordModal.addEventListener('click', () => closeModal(changePasswordModal)); // Close change password modal
-
 
 productDetailModal.addEventListener('click', (e) => {
     if (e.target === productDetailModal) {
@@ -711,8 +672,6 @@ orderTrackingModal.addEventListener('click', (e) => { if (e.target === orderTrac
 paymentWarrantyModal.addEventListener('click', (e) => { if (e.target === paymentWarrantyModal) closeModal(paymentWarrantyModal); });
 loginRegisterModal.addEventListener('click', (e) => { if (e.target === loginRegisterModal) closeModal(loginRegisterModal); });
 profileModal.addEventListener('click', (e) => { if (e.target === profileModal) closeModal(profileModal); });
-changePasswordModal.addEventListener('click', (e) => { if (e.target === changePasswordModal) closeModal(changePasswordModal); });
-
 
 openManagementModalBtn.addEventListener('click', () => {
     if (!loggedInUser) {
@@ -3108,9 +3067,6 @@ function updateAuthUI() {
         if (adminVoucherSection) {
             adminVoucherSection.style.display = loggedInUser.isAdmin ? 'block' : 'none';
         }
-        // Show profile related buttons
-        changePasswordBtn.style.display = 'block';
-        forgotPasswordBtnProfile.style.display = 'block';
 
     } else {
         loginStatusBtn.textContent = 'Đăng nhập';
@@ -3123,9 +3079,6 @@ function updateAuthUI() {
         if (adminVoucherSection) {
             adminVoucherSection.style.display = 'none';
         }
-        // Hide profile related buttons
-        changePasswordBtn.style.display = 'none';
-        forgotPasswordBtnProfile.style.display = 'none';
     }
 }
 
@@ -3251,7 +3204,6 @@ async function renderProfileModal() {
         profileFullnameInput.value = loggedInUser.fullname || '';
         profilePhoneInput.value = loggedInUser.phone || '';
         profileProvinceInput.value = loggedInUser.province || '';
-        profileErrorMessage.classList.add('hidden'); // Hide error message on modal open
     }
 }
 
@@ -3282,136 +3234,6 @@ saveProfileBtn.addEventListener('click', async () => {
         hideLoading();
     }
 });
-
-// Event listener for "Change Password" button in Profile Modal
-changePasswordBtn.addEventListener('click', () => {
-    if (!loggedInUser || !loggedInUser.id) {
-        showNotification('Vui lòng đăng nhập để đổi mật khẩu.', 'info');
-        openModal(loginRegisterModal);
-        return;
-    }
-    // Clear previous inputs and error messages
-    currentPasswordInput.value = '';
-    newPasswordInput.value = '';
-    confirmNewPasswordInput.value = '';
-    changePasswordErrorMessage.classList.add('hidden');
-    closeModal(profileModal); // Close profile modal before opening change password modal
-    openModal(changePasswordModal);
-});
-
-// Event listener for "Forgot Password" button in Profile Modal
-forgotPasswordBtnProfile.addEventListener('click', async () => {
-    if (!loggedInUser || !loggedInUser.id) {
-        showNotification('Vui lòng đăng nhập để sử dụng chức năng này.', 'info');
-        openModal(loginRegisterModal);
-        return;
-    }
-    if (!loggedInUser.email) {
-        showNotification('Không tìm thấy email liên kết với tài khoản của bạn. Vui lòng liên hệ hỗ trợ.', 'error');
-        return;
-    }
-
-    showLoading();
-    try {
-        await sendPasswordResetEmail(auth, loggedInUser.email);
-        showNotification(`Email đặt lại mật khẩu đã được gửi đến ${loggedInUser.email}. Vui lòng kiểm tra hộp thư của bạn.`, 'success');
-        closeModal(profileModal); // Close profile modal after sending email
-    } catch (error) {
-        console.error("Error sending password reset email:", error);
-        showNotification(`Lỗi khi gửi email đặt lại mật khẩu: ${error.message}`, 'error');
-    } finally {
-        hideLoading();
-    }
-});
-
-// New: Event listener for "Forgot Password" link in Login Modal
-forgotPasswordLinkLogin.addEventListener('click', async (e) => {
-    e.preventDefault();
-    const email = prompt('Vui lòng nhập email của bạn để đặt lại mật khẩu:');
-    if (email) {
-        showLoading();
-        try {
-            await sendPasswordResetEmail(auth, email.trim());
-            showNotification(`Email đặt lại mật khẩu đã được gửi đến ${email.trim()}. Vui lòng kiểm tra hộp thư của bạn.`, 'success');
-        } catch (error) {
-            console.error("Error sending password reset email from login:", error);
-            showNotification(`Lỗi khi gửi email đặt lại mật khẩu: ${error.message}`, 'error');
-        } finally {
-            hideLoading();
-        }
-    } else {
-        showNotification('Vui lòng nhập email để đặt lại mật khẩu.', 'info');
-    }
-});
-
-
-// Event listener for "Submit Change Password" button in Change Password Modal
-submitChangePasswordBtn.addEventListener('click', async () => {
-    if (!loggedInUser || !loggedInUser.id) {
-        showNotification('Vui lòng đăng nhập để đổi mật khẩu.', 'info');
-        openModal(loginRegisterModal);
-        return;
-    }
-
-    const currentPassword = currentPasswordInput.value.trim();
-    const newPassword = newPasswordInput.value.trim();
-    const confirmNewPassword = confirmNewPasswordInput.value.trim();
-
-    if (!currentPassword || !newPassword || !confirmNewPassword) {
-        changePasswordErrorMessage.textContent = 'Vui lòng điền đầy đủ thông tin.';
-        changePasswordErrorMessage.classList.remove('hidden');
-        return;
-    }
-    if (newPassword !== confirmNewPassword) {
-        changePasswordErrorMessage.textContent = 'Mật khẩu mới và xác nhận mật khẩu không khớp.';
-        changePasswordErrorMessage.classList.remove('hidden');
-        return;
-    }
-    if (newPassword.length < 6) { // Firebase requires at least 6 characters for password
-        changePasswordErrorMessage.textContent = 'Mật khẩu mới phải có ít nhất 6 ký tự.';
-        changePasswordErrorMessage.classList.remove('hidden');
-        return;
-    }
-
-    showLoading();
-    try {
-        const user = auth.currentUser;
-        if (!user) {
-            showNotification('Không tìm thấy người dùng hiện tại. Vui lòng đăng nhập lại.', 'error');
-            hideLoading();
-            return;
-        }
-
-        // Reauthenticate user with their current password
-        const credential = EmailAuthProvider.credential(user.email, currentPassword);
-        await reauthenticateWithCredential(user, credential);
-
-        // Update password
-        await updatePassword(user, newPassword);
-
-        showNotification('Mật khẩu của bạn đã được thay đổi thành công!', 'success');
-        changePasswordErrorMessage.classList.add('hidden');
-        closeModal(changePasswordModal); // Close change password modal
-    } catch (error) {
-        console.error("Error changing password:", error);
-        let errorMessage = 'Lỗi khi đổi mật khẩu. Vui lòng thử lại.';
-        if (error.code === 'auth/wrong-password') {
-            errorMessage = 'Mật khẩu hiện tại không đúng.';
-        } else if (error.code === 'auth/requires-recent-login') {
-            errorMessage = 'Vui lòng đăng nhập lại để thay đổi mật khẩu của bạn.';
-            // Optionally, you can force a re-login here
-            await signOut(auth); // Force logout
-            openModal(loginRegisterModal); // Show login modal
-        } else if (error.code === 'auth/weak-password') {
-            errorMessage = 'Mật khẩu quá yếu. Vui lòng chọn mật khẩu mạnh hơn (ít nhất 6 ký tự).';
-        }
-        changePasswordErrorMessage.textContent = errorMessage;
-        changePasswordErrorMessage.classList.remove('hidden');
-    } finally {
-        hideLoading();
-    }
-});
-
 
 async function saveUserCart() {
     if (loggedInUser && currentUserId) {

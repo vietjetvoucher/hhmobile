@@ -38,7 +38,7 @@ let shopDataCache = {
     name: 'Thegioididong.com',
     address: 'Chưa cập nhật',
     backgroundImg: '',
-    adminEmail: 'hhmobile.admin@gmail.com' // Default admin email
+    adminEmail: 'dimensiongsv@gmail.com' // Default admin email
 };
 let userOrdersCache = [];
 let userCartCache = [];
@@ -322,7 +322,7 @@ const clearSearchCreatedOrdersBtn = document.getElementById('clear-search-create
 const searchShippingOrdersInput = document.getElementById('search-shipping-orders');
 const clearSearchShippingOrdersBtn = document.getElementById('clear-search-shipping-orders');
 const searchDeliveredOrdersInput = document.getElementById('search-delivered-orders');
-const clearSearchDeliveredOrdersBtn = document.getElementById('clear-search-delivered-btn');
+const clearSearchDeliveredOrdersBtn = document.getElementById('clear-search-delivered-orders');
 
 
 let currentSelectedProduct = null;
@@ -442,46 +442,46 @@ async function loadShopData() {
                 console.log("Default shop data saved to Firestore.");
             }
 
-            // Removed the default product creation logic
-            // if (!shopDataCache.products || shopDataCache.products.length === 0) {
-            //     const defaultProduct = {
-            //         id: generateId(),
-            //         name: 'iPhone 16 Pro Max',
-            //         basePrice: 30000000,
-            //         image: 'https://placehold.co/400x300/cccccc/333333?text=iPhone+16+Pro+Max',
-            //         description: 'iPhone 16 Pro Max là siêu phẩm mới nhất của Apple, với chip A18 Bionic mạnh mẽ, camera cải tiến vượt trội và màn hình ProMotion siêu mượt.',
-            //         reviewsCount: 500,
-            //         colors: [
-            //             { name: 'Titan Tự Nhiên', priceImpact: 0, display_image: 'https://placehold.co/400x300/8B8B8B/ffffff?text=Titan+Tự+Nhiên' },
-            //             { name: 'Titan Xanh', priceImpact: 500000, display_image: 'https://placehold.co/400x300/00008B/ffffff?text=Titan+Xanh' },
-            //             { name: 'Titan Trắng', priceImpact: 500000, display_image: 'https://placehold.co/400x300/F0F8FF/333333?text=Titan+Trắng' },
-            //             { name: 'Titan Đen', priceImpact: 0, display_image: 'https://placehold.co/400x300/2C3539/ffffff?text=Titan+Đen' }
-            //         ],
-            //         storages: [
-            //             { name: '256GB', priceImpact: 0 },
-            //             { name: '512GB', priceImpact: 3000000 },
-            //             { name: '1TB', priceImpact: 7000000 }
-            //         ],
-            //         variants: [
-            //             { color: 'Titan Tự Nhiên', storage: '256GB', quantity: 100, priceImpact: 0, sold: 20 },
-            //             { color: 'Titan Tự Nhiên', storage: '512GB', quantity: 70, priceImpact: 0, sold: 15 },
-            //             { color: 'Titan Tự Nhiên', storage: '1TB', quantity: 30, priceImpact: 0, sold: 5 },
-            //             { color: 'Titan Xanh', storage: '256GB', quantity: 80, priceImpact: 0, sold: 10 },
-            //             { color: 'Titan Xanh', storage: '512GB', quantity: 50, priceImpact: 0, sold: 8 },
-            //             { color: 'Titan Xanh', storage: '1TB', quantity: 20, priceImpact: 0, sold: 3 },
-            //             { color: 'Titan Trắng', storage: '256GB', quantity: 90, priceImpact: 0, sold: 18 },
-            //             { color: 'Titan Trắng', storage: '512GB', quantity: 60, priceImpact: 0, sold: 12 },
-            //             { color: 'Titan Trắng', storage: '1TB', quantity: 25, priceImpact: 0, sold: 4 },
-            //             { color: 'Titan Đen', storage: '256GB', quantity: 95, priceImpact: 0, sold: 22 },
-            //             { color: 'Titan Đen', storage: '512GB', quantity: 65, priceImpact: 0, sold: 10 },
-            //             { color: 'Titan Đen', storage: '1TB', quantity: 28, priceImpact: 0, sold: 6 }
-            //         ]
-            //     };
-            //     shopDataCache.products = [defaultProduct];
-            //     await setDoc(shopDocRef, shopDataCache); // Save the default product to Firestore
-            //     showNotification('Đã tạo sản phẩm mặc định iPhone 16 Pro Max.', 'info');
-            //     console.log("Default iPhone 16 Pro Max product added and saved.");
-            // }
+            // Check if products array is empty and add a default product if it is
+            if (!shopDataCache.products || shopDataCache.products.length === 0) {
+                const defaultProduct = {
+                    id: generateId(),
+                    name: 'iPhone 16 Pro Max',
+                    basePrice: 30000000,
+                    image: 'https://placehold.co/400x300/cccccc/333333?text=iPhone+16+Pro+Max',
+                    description: 'iPhone 16 Pro Max là siêu phẩm mới nhất của Apple, với chip A18 Bionic mạnh mẽ, camera cải tiến vượt trội và màn hình ProMotion siêu mượt.',
+                    reviewsCount: 500,
+                    colors: [
+                        { name: 'Titan Tự Nhiên', priceImpact: 0, display_image: 'https://placehold.co/400x300/8B8B8B/ffffff?text=Titan+Tự+Nhiên' },
+                        { name: 'Titan Xanh', priceImpact: 500000, display_image: 'https://placehold.co/400x300/00008B/ffffff?text=Titan+Xanh' },
+                        { name: 'Titan Trắng', priceImpact: 500000, display_image: 'https://placehold.co/400x300/F0F8FF/333333?text=Titan+Trắng' },
+                        { name: 'Titan Đen', priceImpact: 0, display_image: 'https://placehold.co/400x300/2C3539/ffffff?text=Titan+Đen' }
+                    ],
+                    storages: [
+                        { name: '256GB', priceImpact: 0 },
+                        { name: '512GB', priceImpact: 3000000 },
+                        { name: '1TB', priceImpact: 7000000 }
+                    ],
+                    variants: [
+                        { color: 'Titan Tự Nhiên', storage: '256GB', quantity: 100, priceImpact: 0, sold: 20 },
+                        { color: 'Titan Tự Nhiên', storage: '512GB', quantity: 70, priceImpact: 0, sold: 15 },
+                        { color: 'Titan Tự Nhiên', storage: '1TB', quantity: 30, priceImpact: 0, sold: 5 },
+                        { color: 'Titan Xanh', storage: '256GB', quantity: 80, priceImpact: 0, sold: 10 },
+                        { color: 'Titan Xanh', storage: '512GB', quantity: 50, priceImpact: 0, sold: 8 },
+                        { color: 'Titan Xanh', storage: '1TB', quantity: 20, priceImpact: 0, sold: 3 },
+                        { color: 'Titan Trắng', storage: '256GB', quantity: 90, priceImpact: 0, sold: 18 },
+                        { color: 'Titan Trắng', storage: '512GB', quantity: 60, priceImpact: 0, sold: 12 },
+                        { color: 'Titan Trắng', storage: '1TB', quantity: 25, priceImpact: 0, sold: 4 },
+                        { color: 'Titan Đen', storage: '256GB', quantity: 95, priceImpact: 0, sold: 22 },
+                        { color: 'Titan Đen', storage: '512GB', quantity: 65, priceImpact: 0, sold: 10 },
+                        { color: 'Titan Đen', storage: '1TB', quantity: 28, priceImpact: 0, sold: 6 }
+                    ]
+                };
+                shopDataCache.products = [defaultProduct];
+                await setDoc(shopDocRef, shopDataCache); // Save the default product to Firestore
+                showNotification('Đã tạo sản phẩm mặc định iPhone 16 Pro Max.', 'info');
+                console.log("Default iPhone 16 Pro Max product added and saved.");
+            }
 
             loadShopSettingsToUI();
             renderProducts();

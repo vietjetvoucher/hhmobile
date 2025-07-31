@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=0.5, minimum-scale=0.5, maximum-scale=2.0, user-scalable=yes">
-    <title id="page-title">Mobilechinhhang.com</title>
+    <title id="page-title">HHmobile.com</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
@@ -310,6 +310,84 @@
         .notification-item .message-text {
             flex-grow: 1;
         }
+
+        /* Hamburger menu styles */
+        .hamburger-menu {
+            display: block; /* Hidden by default, shown on smaller screens */
+            cursor: pointer;
+            padding: 10px;
+            z-index: 50; /* Ensure it's above other elements */
+        }
+
+        .hamburger-menu .bar {
+            width: 25px;
+            height: 3px;
+            background-color: #333;
+            margin: 5px 0;
+            transition: 0.4s;
+        }
+
+        .hamburger-menu.open .bar:nth-child(1) {
+            transform: translateY(8px) rotate(45deg);
+        }
+
+        .hamburger-menu.open .bar:nth-child(2) {
+            opacity: 0;
+        }
+
+        .hamburger-menu.open .bar:nth-child(3) {
+            transform: translateY(-8px) rotate(-45deg);
+        }
+
+        .sidebar-menu {
+            position: fixed;
+            top: 0;
+            left: -250px; /* Hidden by default */
+            width: 250px;
+            height: 100%;
+            background-color: #fff;
+            padding-top: 80px; /* Adjusted to make menu shorter and content move up */
+            box-shadow: 2px 0 5px rgba(0,0,0,0.5);
+            transition: left 0.3s ease-in-out;
+            z-index: 40;
+            overflow-y: auto;
+        }
+
+        .sidebar-menu.open {
+            left: 0; /* Slide in */
+        }
+
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 39;
+        }
+
+        @media (max-width: 1023px) { /* Tailwind's 'lg' breakpoint is 1024px */
+            .hamburger-menu {
+                display: block; /* Show hamburger on smaller screens */
+            }
+            .sidebar-menu {
+                left: -250px; /* Ensure it's hidden by default on small screens */
+            }
+            .main-content-area {
+                margin-left: 0 !important; /* Remove left margin for main content */
+            }
+            .header-search-input {
+                width: 100%;
+            }
+            #shop-address-container {
+                display: none; /* Hide address on small screens */
+            }
+            .category-icons-row {
+                display: none; /* Hide category icons on small screens */
+            }
+        }
     </style>
 </head>
 <body class="bg-fdf8f4 text-333">
@@ -317,19 +395,29 @@
     <!-- Header section, adjusted height and added product category icons -->
     <header class="fixed top-0 left-0 right-0 z-40 bg-yellow-400 text-gray-800 shadow-lg py-2 px-6 md:px-6 lg:px-16 w-full flex flex-col justify-center h-[140px]">
         <div class="flex items-center justify-between w-full mb-2"> <!-- Adjusted mb-1 to mb-2 -->
+            <!-- Hamburger Menu Icon and "MENU" text -->
+            <div class="flex flex-col items-center">
+                <div class="hamburger-menu" id="hamburger-menu">
+                    <div class="bar"></div>
+                    <div class="bar"></div>
+                    <div class="bar"></div>
+                </div>
+                <div class="text-sm font-semibold mt-1 text-gray-800">MENU</div>
+            </div>
+
             <!-- Shop Name and Search Bar -->
-            <div class="flex items-center">
+            <div class="flex items-center flex-grow">
                 <h1 id="shop-name-display" class="text-2xl lg:text-3xl font-bold rounded-full py-1 px-4 transition-all duration-300 ease-in-out hover:scale-105 cursor-pointer mr-4 lg:mr-6">
-                    <i class="fas fa-mobile-alt mr-2 text-gray-700"></i><span class="text-gray-900">Thegioididong</span><span class="text-red-600">.com</span>
+                    <i class="fas fa-mobile-alt mr-2 text-gray-700"></i><span class="text-gray-900">HHmobile</span><span class="text-red-600">.com</span>
                 </h1>
-                <div class="relative flex items-center w-48 md:w-64 lg:w-80">
+                <div class="relative flex items-center w-full max-w-xs md:max-w-md lg:max-w-lg">
                     <input type="text" id="header-product-search-input" placeholder="Bạn tìm gì..." class="header-search-input focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
                     <i class="fas fa-search header-search-icon"></i>
                 </div>
             </div>
 
             <!-- Cart, Address, and Auth Section -->
-            <div class="flex items-center space-x-4 lg:space-x-6">
+            <div class="flex items-center space-x-4 lg:space-x-6 ml-auto">
                 <div id="cart-section" class="flex items-center">
                     <button id="open-cart-modal-btn" class="flex items-center text-gray-800 hover:text-gray-900 font-medium py-1 px-2 rounded-full transition-all duration-200 relative text-sm">
                         <i class="fas fa-shopping-cart text-lg mr-2"></i>
@@ -349,57 +437,62 @@
                     </button>
                 </div>
                 <div id="auth-section">
-                    <button id="login-status-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition-all duration-200 shadow-lg">Đăng nhập</button>
+                    <button id="login-status-btn" class="flex items-center bg-blue-600 hover:bg-blue-700 text-white py-2 px-3 rounded-lg transition-all duration-200 shadow-lg text-sm">
+                        <i class="fas fa-user-circle text-lg mr-1"></i>Đăng nhập
+                    </button>
                 </div>
             </div>
         </div>
 
-        <!-- New row for product category icons -->
-        <div class="flex justify-center items-center w-full space-x-6 mt-3"> <!-- Adjusted mt-2 to mt-3 -->
+        <!-- New row for product category icons - visible on larger screens -->
+        <div class="flex justify-center items-center w-full space-x-40 mt-0 category-icons-row">
             <a href="#" class="flex flex-col items-center text-gray-800 hover:text-blue-700 transition-colors duration-200 category-link" data-category="Điện thoại iOS">
                 <i class="fab fa-apple text-2xl"></i>
-                <span class="text-xs font-medium mt-1">iOS</span>
+                <span class="text-xs font-medium mt-0">iOS</span>
             </a>
             <a href="#" class="flex flex-col items-center text-gray-800 hover:text-green-700 transition-colors duration-200 category-link" data-category="Điện thoại Android">
                 <i class="fab fa-android text-2xl"></i>
-                <span class="text-xs font-medium mt-1">Android</span>
+                <span class="text-xs font-medium mt-0">Android</span>
             </a>
             <a href="#" class="flex flex-col items-center text-gray-800 hover:text-purple-700 transition-colors duration-200 category-link" data-category="Tai nghe Airpod">
                 <i class="fas fa-headphones-alt text-2xl"></i>
-                <span class="text-xs font-medium mt-1">Airpod</span>
+                <span class="text-xs font-medium mt-0">Airpod</span>
             </a>
             <a href="#" class="flex flex-col items-center text-gray-800 hover:text-red-700 transition-colors duration-200 category-link" data-category="Đồng hồ Apple Watch">
                 <i class="fas fa-watch text-2xl"></i>
-                <span class="text-xs font-medium mt-1">Apple Watch</span>
+                <span class="text-xs font-medium mt-0">Apple Watch</span>
             </a>
         </div>
     </header>
 
     <!-- Advertisement banner container, adjusted top position and centering -->
-    <div id="advertisement-banner-container" class="advertisement-banner hidden fixed top-[140px] left-1/2 -translate-x-1/2 z-30 mx-auto w-[95%] md:w-[85%] lg:w-[80%] xl:w-[70%] p-3 rounded-lg h-14">
+    <div id="advertisement-banner-container" class="advertisement-banner hidden fixed top-[140px] left-1/2 -translate-x-1/2 z-30 mx-auto w-[98%] md:w-[95%] lg:w-[90%] xl:w-[110%] p-3 rounded-lg h-14">
         <div class="content" id="advertisement-content"></div>
     </div>
 
-    <!-- Main content area, adjusted padding-top to account for taller header and banner -->
-    <div class="flex flex-1 w-full pt-[200px]"> <!-- Adjusted pt-[180px] to pt-[200px] (140px header + 56px banner + 4px margin) -->
-        <!-- Sidebar/Aside, adjusted padding-top to account for taller header and banner -->
-        <aside class="fixed top-0 left-0 z-30 w-56 lg:w-64 h-50 pt-[200px] bg-white p-4 rounded-xl shadow-lg overflow-y-auto border-r border-gray-200">
-            <h2 class="text-xl font-semibold mb-6 text-gray-800">MENU</h2>
-            <nav>
-                <ul class="space-y-3">
-                    <li><button id="show-products-btn" class="tab-button w-full text-left p-3 rounded-lg font-medium text-base transition-all duration-200 hover:bg-gray-100 active"><i class="fas fa-boxes mr-2"></i>Gian Hàng</button></li>
-                    <li><button id="show-created-orders-btn" class="tab-button w-full text-left p-3 rounded-lg font-medium text-base transition-all duration-200 hover:bg-gray-100"><i class="fas fa-clipboard-list mr-2"></i>Đơn Hàng Đã Tạo</button></li>
-                    <li><button id="show-shipping-orders-btn" class="tab-button w-full text-left p-3 rounded-lg font-medium text-base transition-all duration-200 hover:bg-gray-100"><i class="fas fa-truck mr-2"></i>Đơn Hàng Đang Vận Chuyển</button></li>
-                    <li><button id="show-delivered-orders-btn" class="tab-button w-full text-left p-3 rounded-lg font-medium text-base transition-all duration-200 hover:bg-gray-100"><i class="fas fa-check-circle mr-2"></i>Đơn Hàng Đã Giao</button></li>
-                    <li><button id="open-management-modal-btn" class="tab-button w-full text-left p-3 rounded-lg font-medium text-base transition-all duration-200 hover:bg-gray-100"><i class="fas fa-cogs mr-2"></i>Nhập Hàng</button></li>
-                    <li><button id="open-settings-modal-btn" class="tab-button w-full text-left p-3 rounded-lg font-medium text-base transition-all duration-200 hover:bg-gray-100"><i class="fas fa-cog mr-2"></i>Cài Đặt</button></li>
-                    <li><button id="open-shop-analytics-modal-btn" class="tab-button w-full text-left p-3 rounded-lg font-medium text-base transition-all duration-200 hover:bg-gray-100"><i class="fas fa-chart-line mr-2"></i>Thống Kê</button></li>
-                    <li><button id="open-profile-modal-btn" class="tab-button w-full text-left p-3 rounded-lg font-medium text-base transition-all duration-200 hover:bg-gray-100"><i class="fas fa-user mr-2"></i>Hồ sơ</button></li>
-                </ul>
-            </nav>
-        </aside>
+    <!-- Overlay for hamburger menu -->
+    <div class="overlay" id="menu-overlay"></div>
 
-        <section class="flex-1 ml-56 lg:ml-64 p-6 rounded-xl shadow-lg bg-white overflow-y-auto">
+    <!-- Sidebar/Hamburger Menu -->
+    <aside class="sidebar-menu" id="sidebar-menu">
+        <h2 class="text-xl font-semibold mb-6 text-gray-800 px-4">MENU</h2>
+        <nav>
+            <ul class="space-y-3 px-4">
+                <li><button id="show-products-btn" class="tab-button w-full text-left p-3 rounded-lg font-medium text-base transition-all duration-200 hover:bg-gray-100 active"><i class="fas fa-boxes mr-2"></i>Gian Hàng</button></li>
+                <li><button id="show-created-orders-btn" class="tab-button w-full text-left p-3 rounded-lg font-medium text-base transition-all duration-200 hover:bg-gray-100"><i class="fas fa-clipboard-list mr-2"></i>Đơn Hàng Đã Tạo</button></li>
+                <li><button id="show-shipping-orders-btn" class="tab-button w-full text-left p-3 rounded-lg font-medium text-base transition-all duration-200 hover:bg-gray-100"><i class="fas fa-truck mr-2"></i>Đơn Hàng Đang Vận Chuyển</button></li>
+                <li><button id="show-delivered-orders-btn" class="tab-button w-full text-left p-3 rounded-lg font-medium text-base transition-all duration-200 hover:bg-gray-100"><i class="fas fa-check-circle mr-2"></i>Đơn Hàng Đã Giao</button></li>
+                <li><button id="open-management-modal-btn" class="tab-button w-full text-left p-3 rounded-lg font-medium text-base transition-all duration-200 hover:bg-gray-100"><i class="fas fa-cogs mr-2"></i>Nhập Hàng</button></li>
+                <li><button id="open-settings-modal-btn" class="tab-button w-full text-left p-3 rounded-lg font-medium text-base transition-all duration-200 hover:bg-gray-100"><i class="fas fa-cog mr-2"></i>Cài Đặt</button></li>
+                <li><button id="open-shop-analytics-modal-btn" class="tab-button w-full text-left p-3 rounded-lg font-medium text-base transition-all duration-200 hover:bg-gray-100"><i class="fas fa-chart-line mr-2"></i>Thống Kê</button></li>
+                <li><button id="open-profile-modal-btn" class="tab-button w-full text-left p-3 rounded-lg font-medium text-base transition-all duration-200 hover:bg-gray-100"><i class="fas fa-user mr-2"></i>Hồ sơ</button></li>
+            </ul>
+        </nav>
+    </aside>
+
+    <!-- Main content area, adjusted padding-top to account for taller header and banner -->
+    <div class="flex flex-1 w-full pt-[200px] main-content-area lg:ml-0"> <!-- Removed fixed ml-56/ml-64 -->
+        <section class="flex-1 p-6 rounded-xl shadow-lg bg-white overflow-y-auto w-full">
             <div id="product-list-section" class="active-section">
                 <h2 class="text-3xl font-semibold mb-6 text-gray-800">Sản Phẩm Nổi Bật</h2>
                 <div id="product-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -553,7 +646,7 @@
                 </div>
                 <div>
                     <label for="edit-estimated-delivery-date" class="block text-gray-700 text-lg font-bold mb-2">Ngày dự kiến nhận hàng:</label>
-                    <input type="date" id="edit-estimated-delivery-date" class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <input type="date" id="edit-estimated-delivery-date" class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-2 focus:ring-blue-500">
                 </div>
                 <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg w-full transition-all duration-200 shadow-lg"><i class="fas fa-save mr-2"></i>Lưu Thay Đổi</button>
             </form>
@@ -1039,7 +1132,7 @@
                 </div>
                 <p id="forgot-password-message" class="text-red-500 text-sm mb-4 hidden"></p>
                 <button id="send-reset-password-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg shadow-md transition duration-300 transform hover:scale-105 active:scale-95">
-                    Gửi liên kết đặt lại mật khẩu
+                    Gửi liên kết đặt lại mật khẩu (Nếu không nhận được mail vui lòng kiểm tra thư rác)
                 </button>
                 <p class="mt-4 text-gray-600"><a href="#" id="back-to-login-link" class="text-blue-600 hover:underline">Quay lại Đăng nhập</a></p>
             </div>
@@ -1117,8 +1210,8 @@
                     <h4 class="text-lg font-semibold text-white mb-4">Liên hệ</h4>
                     <ul class="text-sm space-y-2">
                         <li><i class="fas fa-map-marker-alt mr-2"></i>Địa chỉ: Hà Nội</li>
-                        <li><i class="fas fa-phone mr-2"></i>Điện thoại: (028) 6524 3156</li>
-                        <li><i class="fas fa-envelope mr-2"></i>Email: hhmobile.adm@gmail.com.com</li>
+                        <li><i class="fab fa-tiktok mr-2"></i>TikTok : HHmobile</li>
+                        <li><i class="fas fa-envelope mr-2"></i>Email: hhmobile.adm@gmail.com</li>
                     </ul>
                 </div>
                 <div>

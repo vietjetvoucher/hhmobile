@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-import { getAuth, signInWithCustomToken, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { getAuth, signInWithCustomToken, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendPasswordResetEmail, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc, onSnapshot, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 // Global variables provided by the Canvas environment
@@ -115,6 +115,10 @@ const cartModal = document.getElementById('cart-modal');
 const paymentVATModal = document.getElementById('payment-vat-modal');
 const orderTrackingModal = document.getElementById('order-tracking-modal');
 const paymentWarrantyModal = document.getElementById('payment-warranty-modal');
+const loginRegisterModal = document.getElementById('login-register-modal');
+const profileModal = document.getElementById('profile-modal');
+const changePasswordModal = document.getElementById('change-password-modal'); // New: Change password modal
+
 
 const closeProductModalBtn = document.getElementById('close-product-modal');
 const closeOrderModalBtn = document.getElementById('close-order-modal');
@@ -128,6 +132,7 @@ const closeOrderTrackingModalBtn = document.getElementById('close-order-tracking
 const closePaymentWarrantyModalBtn = document.getElementById('close-payment-warranty-modal');
 const closeLoginRegisterModalBtn = document.getElementById('close-login-register-modal');
 const closeProfileModalBtn = document.getElementById('close-profile-modal-btn');
+const closeChangePasswordModalBtn = document.getElementById('close-change-password-modal'); // New: Close change password modal
 
 const showProductsBtn = document.getElementById('show-products-btn');
 const showCreatedOrdersBtn = document.getElementById('show-created-orders-btn');
@@ -194,6 +199,7 @@ const addEditProductTitle = document.getElementById('add-edit-product-title');
 const addEditProductForm = document.getElementById('add-edit-product-form');
 const editProductIdInput = document.getElementById('edit-product-id');
 const newProductNameInput = document.getElementById('new-product-name');
+const newProductCategorySelect = document.getElementById('new-product-category'); // New: Product category select
 const newProductBasePriceInput = document.getElementById('new-product-base-price');
 const newProductImageInput = document.getElementById('new-product-image');
 const newProductDescriptionInput = document.getElementById('new-product-description');
@@ -289,7 +295,6 @@ const warrantyPaymentTotal = document.getElementById('warranty-payment-total');
 const confirmWarrantyPaymentBtn = document.getElementById('confirm-warranty-payment-btn');
 const adminConfirmWarrantyBtn = document.getElementById('admin-confirm-warranty-btn');
 
-const loginRegisterModal = document.getElementById('login-register-modal');
 const authModalTitle = document.getElementById('auth-modal-title');
 const loginForm = document.getElementById('login-form');
 const registerForm = document.getElementById('register-form');
@@ -307,14 +312,26 @@ const registerPhoneInput = document.getElementById('register-phone'); // Correct
 const registerProvinceInput = document.getElementById('register-province');
 const registerSubmitBtn = document.getElementById('register-submit-btn');
 const registerErrorMessage = document.getElementById('register-error-message');
+const forgotPasswordLink = document.getElementById('forgot-password-link'); // New: Forgot password link
+const forgotPasswordForm = document.getElementById('forgot-password-form'); // New: Forgot password form
+const forgotPasswordEmailInput = document.getElementById('forgot-password-email'); // New: Forgot password email input
+const forgotPasswordMessage = document.getElementById('forgot-password-message'); // New: Forgot password message
+const sendResetPasswordBtn = document.getElementById('send-reset-password-btn'); // New: Send reset password button
+const backToLoginLink = document.getElementById('back-to-login-link'); // New: Back to login link
 
-const profileModal = document.getElementById('profile-modal');
 const profileUsernameInput = document.getElementById('profile-username');
 const profileFullnameInput = document.getElementById('profile-fullname');
 const profilePhoneInput = document.getElementById('profile-phone');
 const profileProvinceInput = document.getElementById('profile-province');
 const saveProfileBtn = document.getElementById('save-profile-btn');
 const profileErrorMessage = document.getElementById('profile-error-message');
+const changePasswordBtn = document.getElementById('change-password-btn'); // New: Change password button in profile
+
+const currentPasswordInput = document.getElementById('current-password'); // New: Current password input
+const newPasswordInput = document.getElementById('new-password'); // New: New password input
+const confirmNewPasswordInput = document.getElementById('confirm-new-password'); // New: Confirm new password input
+const changePasswordErrorMessage = document.getElementById('change-password-error-message'); // New: Change password error message
+const submitChangePasswordBtn = document.getElementById('submit-change-password-btn'); // New: Submit change password button
 
 // Search inputs for order sections
 const searchCreatedOrdersInput = document.getElementById('search-created-orders');
@@ -323,6 +340,9 @@ const searchShippingOrdersInput = document.getElementById('search-shipping-order
 const clearSearchShippingOrdersBtn = document.getElementById('clear-search-shipping-orders');
 const searchDeliveredOrdersInput = document.getElementById('search-delivered-orders');
 const clearSearchDeliveredOrdersBtn = document.getElementById('clear-search-delivered-orders');
+
+// Product category links
+const categoryLinks = document.querySelectorAll('.category-link');
 
 
 let currentSelectedProduct = null;
@@ -447,6 +467,7 @@ async function loadShopData() {
                 const defaultProduct = {
                     id: generateId(),
                     name: 'iPhone 16 Pro Max',
+                    category: 'Điện thoại iOS', // Default category
                     basePrice: 30000000,
                     image: 'https://placehold.co/400x300/cccccc/333333?text=iPhone+16+Pro+Max',
                     description: 'iPhone 16 Pro Max là siêu phẩm mới nhất của Apple, với chip A18 Bionic mạnh mẽ, camera cải tiến vượt trội và màn hình ProMotion siêu mượt.',
@@ -651,6 +672,7 @@ closeOrderTrackingModalBtn.addEventListener('click', () => closeModal(orderTrack
 closePaymentWarrantyModalBtn.addEventListener('click', () => closeModal(paymentWarrantyModal));
 closeLoginRegisterModalBtn.addEventListener('click', () => closeModal(loginRegisterModal));
 closeProfileModalBtn.addEventListener('click', () => closeModal(profileModal));
+closeChangePasswordModalBtn.addEventListener('click', () => closeModal(changePasswordModal)); // New: Close change password modal
 
 productDetailModal.addEventListener('click', (e) => {
     if (e.target === productDetailModal) {
@@ -672,6 +694,8 @@ orderTrackingModal.addEventListener('click', (e) => { if (e.target === orderTrac
 paymentWarrantyModal.addEventListener('click', (e) => { if (e.target === paymentWarrantyModal) closeModal(paymentWarrantyModal); });
 loginRegisterModal.addEventListener('click', (e) => { if (e.target === loginRegisterModal) closeModal(loginRegisterModal); });
 profileModal.addEventListener('click', (e) => { if (e.target === profileModal) closeModal(profileModal); });
+changePasswordModal.addEventListener('click', (e) => { if (e.target === changePasswordModal) closeModal(changePasswordModal); }); // New: Close change password modal on overlay click
+
 
 openManagementModalBtn.addEventListener('click', () => {
     if (!loggedInUser) {
@@ -782,6 +806,15 @@ headerProductSearchInput.addEventListener('input', () => {
     renderProducts(headerProductSearchInput.value.trim());
 });
 
+// New: Event listeners for category links
+categoryLinks.forEach(link => {
+    link.addEventListener('click', (e) => {
+        e.preventDefault();
+        const category = e.target.closest('.category-link').dataset.category;
+        renderProducts('', category); // Filter by category, clear search term
+    });
+});
+
 function renderProductCard(product) {
     const card = document.createElement('div');
     card.className = 'product-card bg-white rounded-xl shadow-lg p-6 flex flex-col items-center text-center hover:shadow-xl transition-shadow duration-300 relative';
@@ -790,20 +823,24 @@ function renderProductCard(product) {
         <img src="${product.image}" onerror="this.onerror=null;this.src='https://placehold.co/300x200/cccccc/333333?text=No+Image';" alt="${product.name}" class="w-full h-48 object-cover rounded-lg mb-4 shadow-md">
         <h3 class="text-xl font-semibold mb-2 text-gray-900">${product.name}</h3>
         <p class="text-lg text-gray-700">Giá gốc: <span class="font-bold">${formatCurrency(product.basePrice)}</span></p>
+        <p class="text-sm text-gray-500 mb-2">Phân loại: ${product.category || 'Chưa phân loại'}</p>
         ${starsHtml}
         <button data-product-id="${product.id}" class="view-product-btn mt-4 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-5 rounded-full transition-all duration-200 shadow-md">Xem chi tiết</button>
     `;
     return card;
 }
 
-function renderProducts(searchTerm = '') {
+function renderProducts(searchTerm = '', category = '') {
     const productGrid = document.getElementById('product-grid');
     productGrid.innerHTML = '';
     const lowerCaseSearchTerm = searchTerm.toLowerCase();
-    const filteredProducts = shopDataCache.products.filter(product =>
-        product.name.toLowerCase().includes(lowerCaseSearchTerm) ||
-        product.description.toLowerCase().includes(lowerCaseSearchTerm)
-    );
+
+    const filteredProducts = shopDataCache.products.filter(product => {
+        const matchesSearch = product.name.toLowerCase().includes(lowerCaseSearchTerm) ||
+                              product.description.toLowerCase().includes(lowerCaseSearchTerm);
+        const matchesCategory = category === '' || product.category === category;
+        return matchesSearch && matchesCategory;
+    });
 
     if (filteredProducts.length === 0) {
         productGrid.innerHTML = '<p class="text-gray-500 italic text-center col-span-full">Không tìm thấy sản phẩm nào.</p>';
@@ -1879,6 +1916,7 @@ function renderProductManagementList() {
                 <div>
                     <p class="font-semibold text-gray-900">${product.name}</p>
                     <p class="text-sm text-gray-600">${formatCurrency(product.basePrice)}</p>
+                    <p class="text-xs text-gray-500">Loại: ${product.category || 'N/A'}</p>
                 </div>
             </div>
             <div class="flex space-x-2">
@@ -1930,6 +1968,7 @@ function resetAddEditProductForm() {
     addEditProductTitle.textContent = 'Thêm Mặt Hàng Mới';
     editProductIdInput.value = '';
     newProductNameInput.value = '';
+    newProductCategorySelect.value = ''; // Reset category
     newProductBasePriceInput.value = '';
     newProductImageInput.value = '';
     newProductDescriptionInput.value = '';
@@ -1975,6 +2014,7 @@ addEditProductForm.addEventListener('submit', async (e) => {
 
     const productId = editProductIdInput.value;
     const name = newProductNameInput.value.trim();
+    const category = newProductCategorySelect.value; // Get category
     const basePrice = parseFloat(newProductBasePriceInput.value);
     const image = newProductImageInput.value.trim();
     const description = newProductDescriptionInput.value.trim();
@@ -2007,6 +2047,7 @@ addEditProductForm.addEventListener('submit', async (e) => {
 
     const newProduct = {
         name,
+        category, // Add category to product object
         basePrice,
         image,
         description,
@@ -2047,6 +2088,7 @@ async function editProduct(productId) {
     addEditProductTitle.textContent = 'Chỉnh Sửa Sản Phẩm';
     editProductIdInput.value = product.id;
     newProductNameInput.value = product.name;
+    newProductCategorySelect.value = product.category || ''; // Set category
     newProductBasePriceInput.value = product.basePrice;
     newProductImageInput.value = product.image;
     newProductDescriptionInput.value = product.description;
@@ -3093,19 +3135,70 @@ loginStatusBtn.addEventListener('click', () => {
 showRegisterFormLink.addEventListener('click', (e) => {
     e.preventDefault();
     loginForm.classList.add('hidden');
+    forgotPasswordForm.classList.add('hidden'); // Hide forgot password form
     registerForm.classList.remove('hidden');
     authModalTitle.textContent = 'Đăng ký';
     loginErrorMessage.classList.add('hidden');
     registerErrorMessage.classList.add('hidden');
+    forgotPasswordMessage.classList.add('hidden'); // Hide forgot password message
 });
 
 showLoginFormLink.addEventListener('click', (e) => {
     e.preventDefault();
     registerForm.classList.add('hidden');
+    forgotPasswordForm.classList.add('hidden'); // Hide forgot password form
     loginForm.classList.remove('hidden');
     authModalTitle.textContent = 'Đăng nhập';
     loginErrorMessage.classList.add('hidden');
     registerErrorMessage.classList.add('hidden');
+    forgotPasswordMessage.classList.add('hidden'); // Hide forgot password message
+});
+
+// New: Forgot password link click handler
+forgotPasswordLink.addEventListener('click', (e) => {
+    e.preventDefault();
+    loginForm.classList.add('hidden');
+    registerForm.classList.add('hidden');
+    forgotPasswordForm.classList.remove('hidden');
+    authModalTitle.textContent = 'Quên mật khẩu';
+    loginErrorMessage.classList.add('hidden');
+    registerErrorMessage.classList.add('hidden');
+    forgotPasswordMessage.classList.add('hidden');
+    forgotPasswordEmailInput.value = loginUsernameInput.value; // Pre-fill email if available
+});
+
+// New: Back to login link click handler
+backToLoginLink.addEventListener('click', (e) => {
+    e.preventDefault();
+    forgotPasswordForm.classList.add('hidden');
+    loginForm.classList.remove('hidden');
+    authModalTitle.textContent = 'Đăng nhập';
+    forgotPasswordMessage.classList.add('hidden');
+});
+
+// New: Send reset password button click handler
+sendResetPasswordBtn.addEventListener('click', async () => {
+    const email = forgotPasswordEmailInput.value.trim();
+    if (!email) {
+        forgotPasswordMessage.textContent = 'Vui lòng nhập email của bạn.';
+        forgotPasswordMessage.classList.remove('hidden');
+        return;
+    }
+
+    showLoading();
+    try {
+        await sendPasswordResetEmail(auth, email);
+        forgotPasswordMessage.textContent = 'Liên kết đặt lại mật khẩu đã được gửi đến email của bạn. Vui lòng kiểm tra hộp thư đến.';
+        forgotPasswordMessage.classList.remove('hidden');
+        forgotPasswordMessage.style.color = '#4CAF50'; // Green for success
+    } catch (error) {
+        console.error("Error sending password reset email:", error);
+        forgotPasswordMessage.textContent = `Lỗi: ${error.message}`;
+        forgotPasswordMessage.classList.remove('hidden');
+        forgotPasswordMessage.style.color = '#f44336'; // Red for error
+    } finally {
+        hideLoading();
+    }
 });
 
 registerSubmitBtn.addEventListener('click', async () => {
@@ -3235,6 +3328,78 @@ saveProfileBtn.addEventListener('click', async () => {
     }
 });
 
+// New: Change password button in profile modal
+changePasswordBtn.addEventListener('click', () => {
+    if (!loggedInUser || !loggedInUser.id) {
+        showNotification('Vui lòng đăng nhập để thay đổi mật khẩu.', 'info');
+        openModal(loginRegisterModal);
+        return;
+    }
+    closeModal(profileModal);
+    openModal(changePasswordModal);
+    // Clear previous messages and inputs
+    currentPasswordInput.value = '';
+    newPasswordInput.value = '';
+    confirmNewPasswordInput.value = '';
+    changePasswordErrorMessage.classList.add('hidden');
+});
+
+// New: Submit change password button handler
+submitChangePasswordBtn.addEventListener('click', async () => {
+    const currentPassword = currentPasswordInput.value.trim();
+    const newPassword = newPasswordInput.value.trim();
+    const confirmNewPassword = confirmNewPasswordInput.value.trim();
+
+    if (!currentPassword || !newPassword || !confirmNewPassword) {
+        changePasswordErrorMessage.textContent = 'Vui lòng điền đầy đủ thông tin.';
+        changePasswordErrorMessage.classList.remove('hidden');
+        return;
+    }
+    if (newPassword !== confirmNewPassword) {
+        changePasswordErrorMessage.textContent = 'Mật khẩu mới và xác nhận mật khẩu mới không khớp.';
+        changePasswordErrorMessage.classList.remove('hidden');
+        return;
+    }
+    if (newPassword.length < 6) {
+        changePasswordErrorMessage.textContent = 'Mật khẩu mới phải có ít nhất 6 ký tự.';
+        changePasswordErrorMessage.classList.remove('hidden');
+        return;
+    }
+
+    showLoading();
+    try {
+        const user = auth.currentUser;
+        if (!user) {
+            showNotification('Không tìm thấy người dùng. Vui lòng đăng nhập lại.', 'error');
+            closeModal(changePasswordModal);
+            openModal(loginRegisterModal);
+            return;
+        }
+
+        const credential = EmailAuthProvider.credential(user.email, currentPassword);
+        await reauthenticateWithCredential(user, credential);
+        await updatePassword(user, newPassword);
+
+        showNotification('Mật khẩu đã được thay đổi thành công!', 'success');
+        changePasswordErrorMessage.classList.add('hidden');
+        closeModal(changePasswordModal);
+    } catch (error) {
+        console.error("Error changing password:", error);
+        let errorMessage = 'Lỗi khi thay đổi mật khẩu.';
+        if (error.code === 'auth/wrong-password') {
+            errorMessage = 'Mật khẩu hiện tại không đúng.';
+        } else if (error.code === 'auth/too-many-requests') {
+            errorMessage = 'Quá nhiều yêu cầu. Vui lòng thử lại sau.';
+        } else if (error.code === 'auth/requires-recent-login') {
+            errorMessage = 'Vui lòng đăng nhập lại để thay đổi mật khẩu.';
+        }
+        changePasswordErrorMessage.textContent = errorMessage;
+        changePasswordErrorMessage.classList.remove('hidden');
+    } finally {
+        hideLoading();
+    }
+});
+
 async function saveUserCart() {
     if (loggedInUser && currentUserId) {
         showLoading();
@@ -3287,4 +3452,4 @@ document.getElementById('open-address-in-map-btn').addEventListener('click', () 
     } else {
         showNotification('Vui lòng cập nhật địa chỉ cửa hàng trong cài đặt trước.', 'info');
     }
-});
+});   

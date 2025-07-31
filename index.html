@@ -202,7 +202,8 @@
             font-weight: bold;
             font-size: 1.2rem;
             position: fixed;
-            top: 48px;
+            /* Adjusted top position to be just below the header */
+            top: 140px; /* Header height is 140px, so banner starts at 140px */
             left: 50%;
             transform: translateX(-50%);
             z-index: 45;
@@ -313,49 +314,76 @@
 </head>
 <body class="bg-fdf8f4 text-333">
 
-    <header class="fixed top-0 left-0 right-0 z-40 bg-yellow-400 text-gray-800 shadow-lg py-6 px-6 md:px-6 lg:px-16 w-full flex items-center justify-between h-[75px]">
-        <div class="flex items-center">
-            <h1 id="shop-name-display" class="text-2xl lg:text-3xl font-bold rounded-full py-1 px-4 transition-all duration-300 ease-in-out hover:scale-105 cursor-pointer mr-4 lg:mr-6">
-                <i class="fas fa-mobile-alt mr-2 text-gray-700"></i><span class="text-gray-900">Thegioididong</span><span class="text-red-600">.com</span>
-            </h1>
-            <div class="relative flex items-center w-48 md:w-64 lg:w-80">
-                <input type="text" id="header-product-search-input" placeholder="Bạn tìm gì..." class="header-search-input focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
-                <i class="fas fa-search header-search-icon"></i>
+    <!-- Header section, adjusted height and added product category icons -->
+    <header class="fixed top-0 left-0 right-0 z-40 bg-yellow-400 text-gray-800 shadow-lg py-2 px-6 md:px-6 lg:px-16 w-full flex flex-col justify-center h-[140px]">
+        <div class="flex items-center justify-between w-full mb-2"> <!-- Adjusted mb-1 to mb-2 -->
+            <!-- Shop Name and Search Bar -->
+            <div class="flex items-center">
+                <h1 id="shop-name-display" class="text-2xl lg:text-3xl font-bold rounded-full py-1 px-4 transition-all duration-300 ease-in-out hover:scale-105 cursor-pointer mr-4 lg:mr-6">
+                    <i class="fas fa-mobile-alt mr-2 text-gray-700"></i><span class="text-gray-900">Thegioididong</span><span class="text-red-600">.com</span>
+                </h1>
+                <div class="relative flex items-center w-48 md:w-64 lg:w-80">
+                    <input type="text" id="header-product-search-input" placeholder="Bạn tìm gì..." class="header-search-input focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                    <i class="fas fa-search header-search-icon"></i>
+                </div>
+            </div>
+
+            <!-- Cart, Address, and Auth Section -->
+            <div class="flex items-center space-x-4 lg:space-x-6">
+                <div id="cart-section" class="flex items-center">
+                    <button id="open-cart-modal-btn" class="flex items-center text-gray-800 hover:text-gray-900 font-medium py-1 px-2 rounded-full transition-all duration-200 relative text-sm">
+                        <i class="fas fa-shopping-cart text-lg mr-2"></i>
+                        Giỏ hàng
+                        <span id="cart-count" class="absolute -top-1 -right-1 bg-red-600 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">0</span>
+                    </button>
+                </div>
+
+                <div id="shop-address-container" class="flex items-center text-xs text-gray-800 text-right">
+                    <i class="fas fa-map-marker-alt text-base mr-1"></i>
+                    <div class="flex flex-col">
+                        <span class="font-semibold mb-0.5">Đc:</span>
+                        <span id="shop-address-display" class="text-xs italic text-gray-700">Chưa cập nhật</span>
+                    </div>
+                    <button id="open-address-in-map-btn" class="ml-2 bg-gray-200 hover:bg-gray-300 text-gray-800 text-xs py-1 px-2 rounded-full transition-all duration-200">
+                        <i class="fas fa-external-link-alt mr-1"></i>
+                    </button>
+                </div>
+                <div id="auth-section">
+                    <button id="login-status-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition-all duration-200 shadow-lg">Đăng nhập</button>
+                </div>
             </div>
         </div>
 
-        <div class="flex items-center space-x-4 lg:space-x-6">
-            <div id="cart-section" class="flex items-center">
-                <button id="open-cart-modal-btn" class="flex items-center text-gray-800 hover:text-gray-900 font-medium py-1 px-2 rounded-full transition-all duration-200 relative text-sm">
-                    <i class="fas fa-shopping-cart text-lg mr-2"></i>
-                    Giỏ hàng
-                    <span id="cart-count" class="absolute -top-1 -right-1 bg-red-600 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">0</span>
-                </button>
-            </div>
-
-            <div id="shop-address-container" class="flex items-center text-xs text-gray-800 text-right">
-                <i class="fas fa-map-marker-alt text-base mr-1"></i>
-                <div class="flex flex-col">
-                    <span class="font-semibold mb-0.5">Đc:</span>
-                    <span id="shop-address-display" class="text-xs italic text-gray-700">Chưa cập nhật</span>
-                </div>
-                <button id="open-address-in-map-btn" class="ml-2 bg-gray-200 hover:bg-gray-300 text-gray-800 text-xs py-1 px-2 rounded-full transition-all duration-200">
-                    <i class="fas fa-external-link-alt mr-1"></i>
-                </button>
-            </div>
-            <div id="auth-section">
-                <button id="login-status-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition-all duration-200 shadow-lg">Đăng nhập</button>
-            </div>
+        <!-- New row for product category icons -->
+        <div class="flex justify-center items-center w-full space-x-6 mt-3"> <!-- Adjusted mt-2 to mt-3 -->
+            <a href="#" class="flex flex-col items-center text-gray-800 hover:text-blue-700 transition-colors duration-200 category-link" data-category="Điện thoại iOS">
+                <i class="fab fa-apple text-2xl"></i>
+                <span class="text-xs font-medium mt-1">iOS</span>
+            </a>
+            <a href="#" class="flex flex-col items-center text-gray-800 hover:text-green-700 transition-colors duration-200 category-link" data-category="Điện thoại Android">
+                <i class="fab fa-android text-2xl"></i>
+                <span class="text-xs font-medium mt-1">Android</span>
+            </a>
+            <a href="#" class="flex flex-col items-center text-gray-800 hover:text-purple-700 transition-colors duration-200 category-link" data-category="Tai nghe Airpod">
+                <i class="fas fa-headphones-alt text-2xl"></i>
+                <span class="text-xs font-medium mt-1">Airpod</span>
+            </a>
+            <a href="#" class="flex flex-col items-center text-gray-800 hover:text-red-700 transition-colors duration-200 category-link" data-category="Đồng hồ Apple Watch">
+                <i class="fas fa-watch text-2xl"></i>
+                <span class="text-xs font-medium mt-1">Apple Watch</span>
+            </a>
         </div>
     </header>
 
-    <div id="advertisement-banner-container" class="advertisement-banner hidden fixed top-20 left-190 right-0 z-30 mx-auto w-[95%] md:w-[85%] lg:w-[80%] xl:w-[70%] p-3 rounded-lg h-14">
+    <!-- Advertisement banner container, adjusted top position and centering -->
+    <div id="advertisement-banner-container" class="advertisement-banner hidden fixed top-[140px] left-1/2 -translate-x-1/2 z-30 mx-auto w-[95%] md:w-[85%] lg:w-[80%] xl:w-[70%] p-3 rounded-lg h-14">
         <div class="content" id="advertisement-content"></div>
     </div>
 
-
-    <div class="flex flex-1 w-full pt-28">
-        <aside class="fixed top-0 left-0 z-30 w-56 lg:w-64 h-full pt-20 bg-white p-4 rounded-xl shadow-lg overflow-y-auto border-r border-gray-200">
+    <!-- Main content area, adjusted padding-top to account for taller header and banner -->
+    <div class="flex flex-1 w-full pt-[200px]"> <!-- Adjusted pt-[180px] to pt-[200px] (140px header + 56px banner + 4px margin) -->
+        <!-- Sidebar/Aside, adjusted padding-top to account for taller header and banner -->
+        <aside class="fixed top-0 left-0 z-30 w-56 lg:w-64 h-50 pt-[200px] bg-white p-4 rounded-xl shadow-lg overflow-y-auto border-r border-gray-200">
             <h2 class="text-xl font-semibold mb-6 text-gray-800">MENU</h2>
             <nav>
                 <ul class="space-y-3">
@@ -575,6 +603,17 @@
                         <div>
                             <label for="new-product-name" class="block text-gray-700 text-lg font-bold mb-2">Tên Sản Phẩm:</label>
                             <input type="text" id="new-product-name" class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                        </div>
+                        <div>
+                            <label for="new-product-category" class="block text-gray-700 text-lg font-bold mb-2">Phân loại sản phẩm:</label>
+                            <select id="new-product-category" class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                                <option value="">Chọn loại sản phẩm</option>
+                                <option value="Điện thoại iOS">Điện thoại iOS</option>
+                                <option value="Điện thoại Android">Điện thoại Android</option>
+                                <option value="Tai nghe Airpod">Tai nghe Airpod</option>
+                                <option value="Đồng hồ Apple Watch">Đồng hồ Apple Watch</option>
+                                <option value="Khác">Khác</option>
+                            </select>
                         </div>
                         <div>
                             <label for="new-product-base-price" class="block text-gray-700 text-lg font-bold mb-2">Giá sản phẩm (VND):</label>
@@ -953,7 +992,12 @@
                 <button id="login-submit-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg shadow-md transition duration-300 transform hover:scale-105 active:scale-95">
                     Đăng nhập
                 </button>
-                <p class="mt-4 text-gray-600">Chưa có tài khoản? <a href="#" id="show-register-form-link" class="text-blue-600 hover:underline">Đăng ký ngay</a></p>
+                <p class="mt-4 text-gray-600">
+                    Chưa có tài khoản? <a href="#" id="show-register-form-link" class="text-blue-600 hover:underline">Đăng ký ngay</a>
+                </p>
+                <p class="mt-2 text-gray-600">
+                    <a href="#" id="forgot-password-link" class="text-blue-600 hover:underline">Quên mật khẩu?</a>
+                </p>
             </div>
 
             <div id="register-form" class="hidden max-h-[70vh] overflow-y-auto">
@@ -987,6 +1031,18 @@
                 </button>
                 <p class="mt-4 text-gray-600">Đã có tài khoản? <a href="#" id="show-login-form-link" class="text-blue-600 hover:underline">Đăng nhập</a></p>
             </div>
+
+            <div id="forgot-password-form" class="hidden">
+                <div class="mb-4 text-left">
+                    <label for="forgot-password-email" class="block text-gray-700 text-sm font-semibold mb-2">Email của bạn</label>
+                    <input type="email" id="forgot-password-email" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-transparent transition duration-200 text-gray-900">
+                </div>
+                <p id="forgot-password-message" class="text-red-500 text-sm mb-4 hidden"></p>
+                <button id="send-reset-password-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg shadow-md transition duration-300 transform hover:scale-105 active:scale-95">
+                    Gửi liên kết đặt lại mật khẩu
+                </button>
+                <p class="mt-4 text-gray-600"><a href="#" id="back-to-login-link" class="text-blue-600 hover:underline">Quay lại Đăng nhập</a></p>
+            </div>
         </div>
     </div>
 
@@ -1014,8 +1070,34 @@
             <button id="save-profile-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg shadow-md transition duration-300 transform hover:scale-105 active:scale-95">
                 Lưu thay đổi
             </button>
+            <button id="change-password-btn" class="mt-4 w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 px-6 rounded-lg shadow-md transition duration-300 transform hover:scale-105 active:scale-95">
+                Thay đổi mật khẩu
+            </button>
             <button id="close-profile-modal-btn" class="mt-4 w-full bg-gray-400 hover:bg-gray-500 text-white font-semibold py-3 px-6 rounded-lg transition duration-300 transform hover:scale-105 active:scale-95">
                 Đóng
+            </button>
+        </div>
+    </div>
+
+    <div id="change-password-modal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-xl shadow-2xl p-8 max-w-md w-full text-center relative modal-content">
+            <button id="close-change-password-modal" class="absolute top-4 right-4 text-gray-600 hover:text-gray-800 text-3xl font-bold">&times;</button>
+            <h3 class="text-2xl font-bold text-gray-800 mb-6">Thay đổi mật khẩu</h3>
+            <div class="mb-4 text-left">
+                <label for="current-password" class="block text-gray-700 text-sm font-semibold mb-2">Mật khẩu hiện tại</label>
+                <input type="password" id="current-password" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-transparent transition duration-200 text-gray-900">
+            </div>
+            <div class="mb-4 text-left">
+                <label for="new-password" class="block text-gray-700 text-sm font-semibold mb-2">Mật khẩu mới</label>
+                <input type="password" id="new-password" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-transparent transition duration-200 text-gray-900">
+            </div>
+            <div class="mb-6 text-left">
+                <label for="confirm-new-password" class="block text-gray-700 text-sm font-semibold mb-2">Xác nhận mật khẩu mới</label>
+                <input type="password" id="confirm-new-password" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-transparent transition duration-200 text-gray-900">
+            </div>
+            <p id="change-password-error-message" class="text-red-500 text-sm mb-4 hidden"></p>
+            <button id="submit-change-password-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg shadow-md transition duration-300 transform hover:scale-105 active:scale-95">
+                Xác nhận thay đổi
             </button>
         </div>
     </div>
@@ -1023,7 +1105,38 @@
     <!-- Container for notifications -->
     <div id="notifications-container" class="fixed top-4 right-4 z-[9999] flex flex-col gap-4"></div>
 
-    <!-- Link to external JavaScript file -->
+    <!-- Footer section -->
+    <footer class="bg-gray-800 text-gray-300 py-8 mt-auto">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div>
+                    <h4 class="text-lg font-semibold text-white mb-4">Về chúng tôi</h4>
+                    <p class="text-sm">HHmobile.com là cửa hàng điện thoại di động uy tín, chuyên cung cấp các sản phẩm chính hãng với giá cả cạnh tranh và dịch vụ hậu mãi tuyệt vời.</p>
+                </div>
+                <div>
+                    <h4 class="text-lg font-semibold text-white mb-4">Liên hệ</h4>
+                    <ul class="text-sm space-y-2">
+                        <li><i class="fas fa-map-marker-alt mr-2"></i>Địa chỉ: Hà Nội</li>
+                        <li><i class="fas fa-phone mr-2"></i>Điện thoại: (028) 6524 3156</li>
+                        <li><i class="fas fa-envelope mr-2"></i>Email: hhmobile.adm@gmail.com.com</li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-lg font-semibold text-white mb-4">Theo dõi chúng tôi</h4>
+                    <div class="flex space-x-4">
+                        <a href="#" class="text-gray-300 hover:text-white transition-colors duration-200"><i class="fab fa-facebook-f text-xl"></i></a>
+                        <a href="#" class="text-gray-300 hover:text-white transition-colors duration-200"><i class="fab fa-twitter text-xl"></i></a>
+                        <a href="#" class="text-gray-300 hover:text-white transition-colors duration-200"><i class="fab fa-instagram text-xl"></i></a>
+                        <a href="#" class="text-gray-300 hover:text-white transition-colors duration-200"><i class="fab fa-youtube text-xl"></i></a>
+                    </div>
+                </div>
+            </div>
+            <div class="border-t border-gray-700 mt-8 pt-6 text-center text-sm">
+                <p>&copy; 2024 HHmibile.com. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+        <!-- Link to external JavaScript file -->
     <script type="module" src="./script.js"></script>
 </body>
 </html>

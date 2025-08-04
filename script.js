@@ -786,7 +786,7 @@ function renderProductCard(product) {
     card.className = 'product-card bg-white rounded-xl shadow-lg p-6 flex flex-col items-center text-center hover:shadow-xl transition-shadow duration-300 relative';
     const starsHtml = '<div class="star-rating text-yellow-400 mb-2">' + '<i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>' + ` <span class="text-gray-600 text-sm">(${product.reviewsCount || 0} đánh giá)</span>` + '</div>';
     card.innerHTML = `
-        <img src="${product.image}" onerror="this.onerror=null;this.src='https://placehold.co/300x200/cccccc/333333?text=No+Image';" alt="${product.name}" class="w-full h-56 object-cover rounded-lg mb-4 shadow-md">
+        <img src="${product.image}" onerror="this.onerror=null;this.src='https://placehold.co/300x200/cccccc/333333?text=No+Image';" alt="${product.name}" class="w-full h-64 object-cover rounded-lg mb-4 shadow-md">
         <h3 class="text-xl font-semibold mb-2 text-gray-900">${product.name}</h3>
         <p class="text-lg text-gray-700">Giá sản phẩm: <span class="font-bold">${formatCurrency(product.basePrice)}</span></p>
         <p class="text-sm text-gray-500 mb-2">Phân loại: ${product.category || 'Chưa phân loại'}</p>
@@ -1226,6 +1226,7 @@ async function renderCart(searchTerm = '') {
             updateCart(index, 0);
         });
     });
+
 }
 
 buyAllCartBtn.addEventListener('click', () => {
@@ -1596,14 +1597,19 @@ async function renderOrders(status) {
             });
 
             document.querySelectorAll('.admin-cancel-btn').forEach(button => {
-                button.addEventListener('click', async (e) => {
-                    const orderId = e.target.dataset.orderId;
-                    const customerUserId = e.target.dataset.customerUserId;
-                    if (confirm('Bạn có chắc chắn muốn hủy đơn hàng này?')) {
-                        await deleteOrder(orderId, customerUserId);
-                    }
-                });
+                // Loại bỏ sự kiện trùng
+                button.removeEventListener('click', handleAdminCancelClick);
+                button.addEventListener('click', handleAdminCancelClick);
             });
+
+            function handleAdminCancelClick(e) {
+                const orderId = e.target.dataset.orderId;
+                const customerUserId = e.target.dataset.customerUserId;
+                if (confirm('Bạn có chắc chắn muốn hủy đơn hàng này?')) {
+                    deleteOrder(orderId, customerUserId);  // async
+                }
+            }
+
 
             document.querySelectorAll('.admin-edit-shipping-btn').forEach(button => {
                 button.addEventListener('click', (e) => {
@@ -1715,6 +1721,7 @@ async function updateOrderStatus(orderId, customerUserId, actionType) {
             today.setDate(today.getDate() + 5);
             updates.estimatedDeliveryDate = today.toISOString().split('T')[0];
             updates.status = newStatus;
+            updates.vatPaymentStatus = 'paid';
         } else if (actionType === 'approve_shipping' && newStatus === 'shipping') {
             newStatus = 'delivered';
             updates.status = newStatus;
@@ -1863,9 +1870,9 @@ function renderProductManagementList() {
                 return;
             }
             const productId = e.target.dataset.productId;
-            if (confirm('Bạn có chắc chắn muốn xóa sản phẩm này?')) {
+            //if (confirm('Bạn có chắc chắn muốn xóa sản phẩm này?')) {
                 await deleteProduct(productId);
-            }
+            //}
         });
     });
 }
@@ -2158,9 +2165,9 @@ async function renderVouchersList() {
                 return;
             }
             const voucherCode = e.target.dataset.voucherCode;
-            if (confirm('Bạn có chắc chắn muốn xóa voucher này?')) {
+            //if (confirm('Bạn có chắc chắn muốn xóa voucher này?')) {
                 await deleteVoucher(voucherCode);
-            }
+            //}
         });
     });
 
@@ -2453,9 +2460,9 @@ async function renderWarrantyPackagesList() {
                 return;
             }
             const packageId = e.target.dataset.packageId;
-            if (confirm('Bạn có chắc chắn muốn xóa gói bảo hành này?')) {
+            //if (confirm('Bạn có chắc chắn muốn xóa gói bảo hành này?')) {
                 await deleteWarrantyPackage(packageId);
-            }
+            //}
         });
     });
 }

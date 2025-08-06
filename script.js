@@ -355,7 +355,7 @@ function formatCurrency(amount) {
 }
 
 function generateId() {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
         var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
         return v.toString(16);
     });
@@ -389,7 +389,7 @@ function openModal(modalElement) {
 function closeModal(modalElement) {
     modalElement.classList.remove('active');
     const transitionDuration = parseFloat(getComputedStyle(modalElement).transitionDuration) * 1000;
-    
+
     let transitionEndFired = false;
     const onTransitionEnd = () => {
         transitionEndFired = true;
@@ -755,7 +755,7 @@ openProfileModalBtn.addEventListener('click', () => {
 });
 
 document.querySelectorAll('.toggle-visibility-btn').forEach(button => {
-    button.addEventListener('click', function() {
+    button.addEventListener('click', function () {
         const targetId = this.dataset.targetId;
         const targetInput = document.getElementById(targetId);
         const isBlurred = targetInput.classList.contains('blurred-content');
@@ -803,7 +803,7 @@ function renderProducts(searchTerm = '', category = '') {
 
     const filteredProducts = shopDataCache.products.filter(product => {
         const matchesSearch = product.name.toLowerCase().includes(lowerCaseSearchTerm) ||
-                              product.description.toLowerCase().includes(lowerCaseSearchTerm);
+            product.description.toLowerCase().includes(lowerCaseSearchTerm);
         const matchesCategory = category === '' || product.category === category;
         return matchesSearch && matchesCategory;
     });
@@ -818,7 +818,9 @@ function renderProducts(searchTerm = '', category = '') {
     });
 
     document.querySelectorAll('.view-product-btn').forEach(button => {
+
         button.addEventListener('click', (e) => {
+
             const productId = e.target.dataset.productId;
             const product = shopDataCache.products.find(p => p.id === productId);
             if (product) {
@@ -828,12 +830,14 @@ function renderProducts(searchTerm = '', category = '') {
                     return;
                 }
                 displayProductDetail(product);
+
             }
         });
     });
 }
 
 function displayProductDetail(product) {
+
     currentSelectedProduct = product;
     currentSelectedOptions = {};
     currentAppliedVoucher = null;
@@ -844,7 +848,7 @@ function displayProductDetail(product) {
     modalProductDescription.textContent = product.description;
     productOptionsContainer.innerHTML = '';
     voucherExpiryMessage.classList.add('hidden');
-
+    modalProductPriceDisplay.classList.remove('price-original');
     if (voucherCountdownInterval) {
         clearInterval(voucherCountdownInterval);
         voucherCountdownInterval = null;
@@ -1074,7 +1078,7 @@ applyVoucherBtn.addEventListener('click', () => {
                 displayValue: voucher.displayValue,
                 isAdminVoucher: voucher.isAdminVoucher
             };
-            showNotification(`Áp dụng voucher thành công!`, 'success');   
+            showNotification(`Áp dụng voucher thành công!`, 'success');
         } else {
             currentAppliedVoucher = null;
             showNotification('Mã voucher đã hết hạn.', 'error');
@@ -1456,7 +1460,7 @@ orderForm.addEventListener('submit', async (e) => {
 
 function debounce(func, delay) {
     let timeout;
-    return function(...args) {
+    return function (...args) {
         const context = this;
         clearTimeout(timeout);
         timeout = setTimeout(() => func.apply(context, args), delay);
@@ -1557,7 +1561,7 @@ async function renderOrders(status) {
             });
 
             document.querySelectorAll('.toggle-visibility-btn').forEach(button => {
-                button.addEventListener('click', function() {
+                button.addEventListener('click', function () {
                     const targetId = this.dataset.targetId;
                     const targetElement = document.getElementById(targetId);
                     const isBlurred = targetElement.classList.contains('blurred-content');
@@ -1572,7 +1576,7 @@ async function renderOrders(status) {
             });
 
             document.querySelectorAll('.toggle-order-details-btn').forEach(button => {
-                button.addEventListener('click', function() {
+                button.addEventListener('click', function () {
                     const orderId = this.closest('.bg-transparent').querySelector('h4').textContent.replace('Đơn hàng #', '');
                     const currentOrder = orders.find(o => o.id === orderId);
                     if (currentOrder) {
@@ -1873,7 +1877,7 @@ function renderProductManagementList() {
             }
             const productId = e.target.dataset.productId;
             //if (confirm('Bạn có chắc chắn muốn xóa sản phẩm này?')) {
-                await deleteProduct(productId);
+            await deleteProduct(productId);
             //}
         });
     });
@@ -2168,7 +2172,7 @@ async function renderVouchersList() {
             }
             const voucherCode = e.target.dataset.voucherCode;
             //if (confirm('Bạn có chắc chắn muốn xóa voucher này?')) {
-                await deleteVoucher(voucherCode);
+            await deleteVoucher(voucherCode);
             //}
         });
     });
@@ -2463,7 +2467,7 @@ async function renderWarrantyPackagesList() {
             }
             const packageId = e.target.dataset.packageId;
             //if (confirm('Bạn có chắc chắn muốn xóa gói bảo hành này?')) {
-                await deleteWarrantyPackage(packageId);
+            await deleteWarrantyPackage(packageId);
             //}
         });
     });
@@ -3291,4 +3295,3 @@ document.getElementById('open-address-in-map-btn').addEventListener('click', () 
         showNotification('Vui lòng cập nhật địa chỉ cửa hàng trong cài đặt trước.', 'info');
     }
 });
-

@@ -1074,13 +1074,15 @@ applyVoucherBtn.addEventListener('click', () => {
                 displayValue: voucher.displayValue,
                 isAdminVoucher: voucher.isAdminVoucher
             };
-            showNotification(`Áp dụng voucher thành công!`, 'success');
+            showNotification(`Áp dụng voucher thành công!`, 'success');   
         } else {
             currentAppliedVoucher = null;
             showNotification('Mã voucher đã hết hạn.', 'error');
         }
+        modalProductPriceDisplay.classList.add('price-original');
     } else {
         currentAppliedVoucher = null;
+        modalProductPriceDisplay.classList.remove('price-original');
         showNotification('Mã voucher không hợp lệ hoặc không tồn tại.', 'error');
     }
     calculateProductPrice();
@@ -3289,3 +3291,4 @@ document.getElementById('open-address-in-map-btn').addEventListener('click', () 
         showNotification('Vui lòng cập nhật địa chỉ cửa hàng trong cài đặt trước.', 'info');
     }
 });
+

@@ -4,13 +4,13 @@ import { getFirestore, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc, onSnap
 
 const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
-    apiKey: "AIzaSyBPjpG1V3HpR4wCFEXth1byWN0q9-9jWiM",
-    authDomain: "hhmobile-df259.firebaseapp.com",
-    projectId: "hhmobile-df259",
-    storageBucket: "hhmobile-df259.firebaseapp.com",
-    messagingSenderId: "273294651647",
-    appId: "1:273294651647:web:02bcd7be6f760cd6849cca",
-    measurementId: "G-YSJ062B717"
+        apiKey: "AIzaSyBPjpG1V3HpR4wCFEXth1byWN0q9-9jWiM",
+        authDomain: "hhmobile-df259.firebaseapp.com",
+        projectId: "hhmobile-df259",
+        storageBucket: "hhmobile-df259.firebaseapp.com",
+        messagingSenderId: "273294651647",
+        appId: "1:273294651647:web:02bcd7be6f760cd6849cca",
+        measurementId: "G-YSJ062B717"
 };
 const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
@@ -355,7 +355,7 @@ function formatCurrency(amount) {
 }
 
 function generateId() {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
         var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
         return v.toString(16);
     });
@@ -389,7 +389,7 @@ function openModal(modalElement) {
 function closeModal(modalElement) {
     modalElement.classList.remove('active');
     const transitionDuration = parseFloat(getComputedStyle(modalElement).transitionDuration) * 1000;
-
+    
     let transitionEndFired = false;
     const onTransitionEnd = () => {
         transitionEndFired = true;
@@ -755,7 +755,7 @@ openProfileModalBtn.addEventListener('click', () => {
 });
 
 document.querySelectorAll('.toggle-visibility-btn').forEach(button => {
-    button.addEventListener('click', function () {
+    button.addEventListener('click', function() {
         const targetId = this.dataset.targetId;
         const targetInput = document.getElementById(targetId);
         const isBlurred = targetInput.classList.contains('blurred-content');
@@ -803,7 +803,7 @@ function renderProducts(searchTerm = '', category = '') {
 
     const filteredProducts = shopDataCache.products.filter(product => {
         const matchesSearch = product.name.toLowerCase().includes(lowerCaseSearchTerm) ||
-            product.description.toLowerCase().includes(lowerCaseSearchTerm);
+                              product.description.toLowerCase().includes(lowerCaseSearchTerm);
         const matchesCategory = category === '' || product.category === category;
         return matchesSearch && matchesCategory;
     });
@@ -818,9 +818,7 @@ function renderProducts(searchTerm = '', category = '') {
     });
 
     document.querySelectorAll('.view-product-btn').forEach(button => {
-
         button.addEventListener('click', (e) => {
-
             const productId = e.target.dataset.productId;
             const product = shopDataCache.products.find(p => p.id === productId);
             if (product) {
@@ -829,15 +827,14 @@ function renderProducts(searchTerm = '', category = '') {
                     openModal(loginRegisterModal);
                     return;
                 }
+                modalProductPriceDisplay.classList.remove('price-original');
                 displayProductDetail(product);
-
             }
         });
     });
 }
 
 function displayProductDetail(product) {
-
     currentSelectedProduct = product;
     currentSelectedOptions = {};
     currentAppliedVoucher = null;
@@ -848,7 +845,7 @@ function displayProductDetail(product) {
     modalProductDescription.textContent = product.description;
     productOptionsContainer.innerHTML = '';
     voucherExpiryMessage.classList.add('hidden');
-    modalProductPriceDisplay.classList.remove('price-original');
+
     if (voucherCountdownInterval) {
         clearInterval(voucherCountdownInterval);
         voucherCountdownInterval = null;
@@ -1086,8 +1083,8 @@ applyVoucherBtn.addEventListener('click', () => {
         modalProductPriceDisplay.classList.add('price-original');
     } else {
         currentAppliedVoucher = null;
-        modalProductPriceDisplay.classList.remove('price-original');
         showNotification('Mã voucher không hợp lệ hoặc không tồn tại.', 'error');
+        modalProductPriceDisplay.classList.remove('price-original');
     }
     calculateProductPrice();
 });
@@ -1460,7 +1457,7 @@ orderForm.addEventListener('submit', async (e) => {
 
 function debounce(func, delay) {
     let timeout;
-    return function (...args) {
+    return function(...args) {
         const context = this;
         clearTimeout(timeout);
         timeout = setTimeout(() => func.apply(context, args), delay);
@@ -1561,7 +1558,7 @@ async function renderOrders(status) {
             });
 
             document.querySelectorAll('.toggle-visibility-btn').forEach(button => {
-                button.addEventListener('click', function () {
+                button.addEventListener('click', function() {
                     const targetId = this.dataset.targetId;
                     const targetElement = document.getElementById(targetId);
                     const isBlurred = targetElement.classList.contains('blurred-content');
@@ -1576,7 +1573,7 @@ async function renderOrders(status) {
             });
 
             document.querySelectorAll('.toggle-order-details-btn').forEach(button => {
-                button.addEventListener('click', function () {
+                button.addEventListener('click', function() {
                     const orderId = this.closest('.bg-transparent').querySelector('h4').textContent.replace('Đơn hàng #', '');
                     const currentOrder = orders.find(o => o.id === orderId);
                     if (currentOrder) {
@@ -1877,7 +1874,7 @@ function renderProductManagementList() {
             }
             const productId = e.target.dataset.productId;
             //if (confirm('Bạn có chắc chắn muốn xóa sản phẩm này?')) {
-            await deleteProduct(productId);
+                await deleteProduct(productId);
             //}
         });
     });
@@ -2172,7 +2169,7 @@ async function renderVouchersList() {
             }
             const voucherCode = e.target.dataset.voucherCode;
             //if (confirm('Bạn có chắc chắn muốn xóa voucher này?')) {
-            await deleteVoucher(voucherCode);
+                await deleteVoucher(voucherCode);
             //}
         });
     });
@@ -2467,7 +2464,7 @@ async function renderWarrantyPackagesList() {
             }
             const packageId = e.target.dataset.packageId;
             //if (confirm('Bạn có chắc chắn muốn xóa gói bảo hành này?')) {
-            await deleteWarrantyPackage(packageId);
+                await deleteWarrantyPackage(packageId);
             //}
         });
     });
@@ -3075,8 +3072,21 @@ registerSubmitBtn.addEventListener('click', async () => {
         loginPasswordInput.value = '';
     } catch (error) {
         console.error("Error during registration:", error);
-        registerErrorMessage.textContent = `Lỗi đăng ký: ${error.message}`;
         registerErrorMessage.classList.remove('hidden');
+        switch (error.code) {
+            case 'auth/email-already-in-use':
+                registerErrorMessage.textContent = 'Tài khoản đã tồn tại. Vui lòng sử dụng email khác.';
+                break;
+            case 'auth/invalid-email':
+                registerErrorMessage.textContent = 'Địa chỉ email không hợp lệ. Vui lòng kiểm tra lại.';
+                break;
+            case 'auth/weak-password':
+                registerErrorMessage.textContent = 'Mật khẩu phải có ít nhất 6 ký tự.';
+                break;
+            default:
+                registerErrorMessage.textContent = `Lỗi đăng ký: ${error.message}`;
+                break;
+        }
     } finally {
         hideLoading();
     }
@@ -3100,8 +3110,20 @@ loginSubmitBtn.addEventListener('click', async () => {
         closeModal(loginRegisterModal);
     } catch (error) {
         console.error("Error during login:", error);
-        loginErrorMessage.textContent = `Lỗi đăng nhập: ${error.message}`;
         loginErrorMessage.classList.remove('hidden');
+        switch (error.code) {
+            case 'auth/invalid-email':
+            case 'auth/user-not-found':
+            case 'auth/invalid-credential':
+                loginErrorMessage.textContent = 'Tên đăng nhập hoặc mật khẩu không đúng. Vui lòng kiểm tra lại.';
+                break;
+            case 'auth/wrong-password':
+                loginErrorMessage.textContent = 'Mật khẩu không đúng. Vui lòng thử lại.';
+                break;
+            default:
+                loginErrorMessage.textContent = `Lỗi đăng nhập: ${error.message}`;
+                break;
+        }
     } finally {
         hideLoading();
     }

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=0.55, minimum-scale=0.55, maximum-scale=2.0, user-scalable=yes">
-    <title id="page-title">HHmobile.com</title>
+    <title id="page-title">HHmobile</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
@@ -408,7 +408,7 @@
             <!-- Shop Name and Search Bar -->
             <div class="flex items-center flex-grow">
                 <h1 id="shop-name-display" class="text-2xl lg:text-3xl font-bold rounded-full py-1 px-4 transition-all duration-300 ease-in-out hover:scale-105 cursor-pointer mr-4 lg:mr-6">
-                    <i class="fas fa-mobile-alt mr-2 text-gray-700"></i><span class="text-gray-900">HHmobile</span><span class="text-red-600">.com</span>
+                    <i class="fas fa-mobile-alt mr-2 text-gray-700"></i><span class="text-gray-900">HHmobile</span><span class="text-red-600">.com.vn</span>
                 </h1>
                 <div class="relative flex items-center w-full max-w-xs md:max-w-md lg:max-w-lg">
                     <input type="text" id="header-product-search-input" placeholder="Bạn tìm gì..." class="header-search-input focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
@@ -464,7 +464,26 @@
             </a>
         </div>
     </header>
-
+	    <!-- Chat Modal -->
+    <div id="chat-modal" class="modal-overlay fixed inset-0 z-50 flex items-center justify-center">
+        <div class="modal-content bg-white p-6 rounded-3xl shadow-2xl w-full max-w-xl">
+            <div class="flex justify-between items-center pb-4 border-b border-gray-200">
+                <h3 class="text-2xl font-bold">Chat với admin</h3>
+                <button id="close-chat-modal" class="text-gray-500 hover:text-gray-800 transition-colors">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+            <div id="chat-window" class="py-4 space-y-4">
+                <!-- Chat messages will be appended here -->
+            </div>
+            <div class="flex items-center pt-4 border-t border-gray-200">
+                <input type="text" id="chat-input" placeholder="Nhập tin nhắn..." class="flex-grow p-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                <button id="send-chat-btn" class="bg-yellow-500 hover:bg-yellow-600 text-white p-2 rounded-r-lg transition-colors">
+                    <i class="fas fa-paper-plane"></i> Gửi
+                </button>
+            </div>
+        </div>
+    </div>
     <!-- Advertisement banner container, adjusted top position and centering -->
     <div id="advertisement-banner-container" class="advertisement-banner hidden fixed top-[140px] left-1/2 -translate-x-1/2 z-30 mx-auto w-[98%] md:w-[95%] lg:w-[90%] xl:w-[110%] p-3 rounded-lg h-14">
         <div class="content" id="advertisement-content"></div>
@@ -539,9 +558,7 @@
             </div>
             <div class="md:w-1/2">
                 <h3 id="modal-product-name" class="text-3xl font-bold mb-4 text-gray-900"></h3>
-                <!-- Thay đổi ở đây: Thêm class "price-original" vào "modal-product-base-price" -->
-                <p class="text-xl font-semibold mb-2 text-gray-700">Giá sản phẩm: <span id="modal-product-base-price" class="font-bold price-original"></span></p>
-                <!-- Thay đổi ở đây: Bỏ class "price-original" khỏi "modal-product-price-display" -->
+                <p class="text-xl font-semibold mb-2 text-gray-700">Giá sản phẩm: <span id="modal-product-base-price" class="price-original"></span></p>
                 <p class="text-xl font-semibold mb-2 text-gray-700">Giá theo phiên bản: <span id="modal-product-price-display" class="font-bold"></span></p>
                 <p class="text-xs font-semibold mb-2 text-gray-700">GTTT: <span id="modal-product-vat-display" class="font-bold text-black-600"></span></p>
                 <p id="modal-product-discount-display" class="text-xl font-semibold mb-4 price-discounted hidden"></p>
@@ -1206,7 +1223,7 @@
             <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
                 <div>
                     <h4 class="text-lg font-semibold text-white mb-4">Về chúng tôi</h4>
-                    <p class="text-sm">HHmobile.com là cửa hàng điện thoại di động uy tín, chuyên cung cấp các sản phẩm chính hãng với giá cả cạnh tranh và dịch vụ hậu mãi tuyệt vời.</p>
+                    <p class="text-sm">HHmobile.com.vn là cửa hàng điện thoại di động uy tín, chuyên cung cấp các sản phẩm chính hãng với giá cả cạnh tranh và dịch vụ hậu mãi tuyệt vời.</p>
                 </div>
                 <div>
                     <h4 class="text-lg font-semibold text-white mb-4">Liên hệ</h4>
@@ -1227,11 +1244,12 @@
                 </div>
             </div>
             <div class="border-t border-gray-700 mt-8 pt-6 text-center text-sm">
-                <p>&copy; 2024 HHmibile.com. All rights reserved.</p>
+                <p>&copy; 2024 HHmibile.com.vn. All rights reserved.</p>
             </div>
         </div>
     </footer>
         <!-- Link to external JavaScript file -->
     <script type="module" src="./script.js"></script>
+	<script type="module" src="./script2.js"></script>
 </body>
 </html>

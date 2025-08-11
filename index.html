@@ -2,1237 +2,377 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=0.55, minimum-scale=0.55, maximum-scale=2.0, user-scalable=yes">
-    <title id="page-title">HHmobile.com</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đang bảo trì - Quay lại sau nhé!</title>
+    <!-- Tailwind CSS CDN để dễ dàng styling đẹp mắt và responsive -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <!-- Firebase SDKs -->
-    <script type="module" src="https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js"></script>
-    <script type="module" src="https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js"></script>
-    <script type="module" src="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js"></script>
-
     <style>
+        /* Tùy chỉnh font Inter */
         body {
-            font-family: 'Inter', sans-serif;
-            background-color: #fdf8f4;
-            color: #333;
-            transition: background-image 0.5s ease-in-out, background-color 0.5s ease-in-out;
-            background-size: cover;
-            background-position: center;
-            background-attachment: fixed;
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
+            font-family: "Inter", sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            background-color: #f0f2f5; /* Màu nền nhẹ nhàng */
+            color: #333; /* Màu chữ chính */
         }
-        header {
-            background-color: #FFD100;
-            color: #333;
-            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.7);
+        /* Đảm bảo canvas responsive */
+        #dino-canvas {
+            background-color: #f7f7f7;
+            border: 2px solid #ccc;
+            border-radius: 8px;
+            display: block; /* Loại bỏ khoảng trắng dưới canvas */
+            width: 100%; /* Chiều rộng linh hoạt */
+            max-width: 700px; /* Tăng giới hạn chiều rộng tối đa */
+            height: 150px; /* Chiều cao cố định */
+            margin: 0 auto; /* Căn giữa */
+            cursor: pointer; /* Thay đổi con trỏ khi di chuột vào */
+            touch-action: manipulation; /* Tối ưu hóa cho cảm ứng, tránh hành vi mặc định của trình duyệt */
         }
-        #shop-name-display {
-            color: #333;
-        }
-        .modal-overlay {
-            background-color: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(8px);
-            transition: opacity 0.3s ease-in-out;
-            opacity: 0;
-            pointer-events: none;
-        }
-        .modal-overlay.active {
-            opacity: 1;
-            pointer-events: auto;
-        }
-        .modal-content {
-            transform: scale(0.9);
-            transition: transform 0.3s ease-in-out;
-            border-radius: 1.5rem;
-        }
-        .modal-overlay.active .modal-content {
-            transform: scale(1);
-        }
-        .price-original {
-            text-decoration: line-through;
-            color: #999;
-        }
-        .price-discounted {
-            color: #e53e3e;
-            font-weight: 600;
-        }
-        .order-status-bar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            position: relative;
-            margin-bottom: 2rem;
-        }
-        .order-status-step {
-            flex: 1;
-            text-align: center;
-            padding: 0.4rem 0;
-            border-bottom: 3px solid #ccc;
-            color: #999;
-            font-weight: 500;
-            position: relative;
-            transition: all 0.3s ease-in-out;
-        }
-        .order-status-step.active {
-            border-color: #4CAF50;
-            color: #4CAF50;
-        }
-        .order-status-step::after {
-            content: '';
-            position: absolute;
-            bottom: -3px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 0;
-            height: 0;
-            border-left: 8px solid transparent;
-            border-right: 8px solid transparent;
-            border-bottom: 8px solid transparent;
-            transition: all 0.3s ease-in-out;
-        }
-        .order-status-step.active::after {
-            border-bottom-color: #4CAF50;
-        }
-        .tab-button.active {
-            background-color: #4CAF50;
-            color: white;
-        }
-        .option-button.selected {
-            background-color: #d1e7dd;
-            border-color: #28a745;
-            color: #212529;
-            position: relative;
-        }
-        .option-button.selected::after {
-            content: "\f00c";
-            font-family: "Font Awesome 5 Free";
-            font-weight: 900;
-            position: absolute;
-            top: 5px;
-            right: 5px;
-            color: #28a745;
-            font-size: 0.8em;
-        }
-        .blurred-content {
-            filter: blur(5px);
-            transition: filter 0.2s ease-in-out;
-        }
-        .masked-input-wrapper {
-            position: relative;
-        }
-        .masked-input-wrapper .toggle-visibility-btn {
-            position: absolute;
-            top: 50%;
-            transform: translateY(-50%);
-            right: 0.5rem;
-            padding: 0 0.75rem;
-            display: flex;
-            align-items: center;
-            color: #6b7280;
-            background: transparent;
-            border: none;
-            cursor: pointer;
-        }
-        .masked-input-wrapper textarea + .toggle-visibility-btn {
-            top: 0.5rem;
-            height: auto;
-        }
-        .out-of-stock {
-            color: #ef4444;
-            font-weight: 600;
-        }
-        .order-expandable-content {
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.3s ease-out;
-        }
-        .order-expandable-content.expanded {
-            max-height: 500px;
-            transition: max-height 0.5s ease-in;
-        }
-        .relative-container {
-            position: relative;
-        }
-        .loading-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: rgba(255, 255, 255, 0.7);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 9999;
-            font-size: 1.5rem;
-            color: #333;
-        }
-        .loading-spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #3498db;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        @keyframes neon-glow {
-            0%, 100% {
-                text-shadow: 0 0 5px #fff, 0 0 10px #fff, 0 0 15px #00f, 0 0 20px #00f, 0 0 25px #00f, 0 0 30px #00f, 0 0 35px #00f;
-            }
-            50% {
-                text-shadow: 0 0 2px #fff, 0 0 5px #fff, 0 0 8px #00f, 0 0 12px #00f, 0 0 15px #00f, 0 0 20px #00f, 0 0 25px #00f;
-            }
-        }
-        #shop-name-display.animated {
-            animation: neon-glow 1.5s ease-in-out infinite alternate;
-        }
-        .advertisement-banner {
-            background-color: #ffeb3b;
-            color: #e53935;
-            text-align: center;
-            padding: 10px 0;
-            font-weight: bold;
-            font-size: 1.2rem;
-            position: fixed;
-            /* Adjusted top position to be just below the header */
-            top: 140px; /* Header height is 140px, so banner starts at 140px */
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 45;
-            overflow: hidden;
-            border-radius: 0.5rem;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            height: 56px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .advertisement-banner .content {
-            display: inline-block;
-            white-space: nowrap;
-            animation: marquee 15s linear infinite;
-        }
-        @keyframes marquee {
-            0% { transform: translateX(100%); }
-            100% { transform: translateX(-100%); }
-        }
-        @keyframes flicker {
-            0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% {
-                opacity: 1;
-                text-shadow: 0 0 4px #ff0, 0 0 10px #ff0, 0 0 20px #ff0, 0 0 40px #ff0;
-            }
-            20%, 24%, 55% {
-                opacity: 0.5;
-                text-shadow: none;
-            }
-        }
-        .advertisement-banner.flicker .content {
-            animation: flicker 2s infinite alternate, marquee 15s linear infinite;
-        }
-        .header-search-input {
-            border-radius: 9999px;
-            border: 1px solid #ccc;
-            padding: 0.5rem 0.5rem 0.5rem 2.5rem;
-            width: 300px;
-            transition: width 0.3s ease-in-out;
-        }
-        .header-search-icon {
-            position: absolute;
-            left: 0.75rem;
-            color: #6b7280;
-        }
-        @media (max-width: 768px) {
-            .header-search-input {
-                width: 100%;
-            }
-        }
-        .star-rating .fa-star {
-            color: gold;
-        }
-        .warranty-package-card {
-            border: 1px solid #e2e8f0;
-            border-radius: 0.75rem;
-            padding: 1rem;
-            margin-bottom: 0.75rem;
-            background-color: #f8fafc;
+
+        /* Thêm hiệu ứng cho nút */
+        .btn-restart {
             transition: all 0.2s ease-in-out;
-        }
-        .warranty-package-card.selected-package {
-            border-color: #3b82f6;
-            background-color: #eff6ff;
-            box-shadow: 0 0 0 2px #bfdbfe;
-        }
-
-        /* Notification styles */
-        #notifications-container {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-        }
-        .notification-item {
-            display: flex;
-            align-items: center;
-            padding: 1rem;
-            border-radius: 0.5rem;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            transition: transform 0.3s ease-out, opacity 0.3s ease-out;
-            transform: translateX(100%);
-            opacity: 0;
         }
-        .notification-item.show {
-            transform: translateX(0);
-            opacity: 1;
+        .btn-restart:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
         }
-        .notification-item.info {
-            background-color: #e0f2fe; /* blue-100 */
-            color: #2196f3; /* blue-500 */
-        }
-        .notification-item.success {
-            background-color: #e6ffed; /* green-100 */
-            color: #4caf50; /* green-500 */
-        }
-        .notification-item.error {
-            background-color: #ffebee; /* red-100 */
-            color: #f44336; /* red-500 */
-        }
-        .notification-item .icon {
-            margin-right: 0.75rem;
-            font-size: 1.5rem;
-        }
-        .notification-item .message-text {
-            flex-grow: 1;
-        }
-
-        /* Hamburger menu styles */
-        .hamburger-menu {
-            display: block; /* Hidden by default, shown on smaller screens */
-            cursor: pointer;
-            padding: 10px;
-            z-index: 50; /* Ensure it's above other elements */
-        }
-
-        .hamburger-menu .bar {
-            width: 25px;
-            height: 3px;
-            background-color: #333;
-            margin: 5px 0;
-            transition: 0.4s;
-        }
-
-        .hamburger-menu.open .bar:nth-child(1) {
-            transform: translateY(8px) rotate(45deg);
-        }
-
-        .hamburger-menu.open .bar:nth-child(2) {
-            opacity: 0;
-        }
-
-        .hamburger-menu.open .bar:nth-child(3) {
-            transform: translateY(-8px) rotate(-45deg);
-        }
-
-        .sidebar-menu {
-            position: fixed;
-            top: 0;
-            left: -250px; /* Hidden by default */
-            width: 250px;
-            height: 100%;
-            background-color: #fff;
-            padding-top: 80px; /* Adjusted to make menu shorter and content move up */
-            box-shadow: 2px 0 5px rgba(0,0,0,0.5);
-            transition: left 0.3s ease-in-out;
-            z-index: 40;
-            overflow-y: auto;
-        }
-
-        .sidebar-menu.open {
-            left: 0; /* Slide in */
-        }
-
-        .overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-            z-index: 39;
-        }
-
-        @media (max-width: 1023px) { /* Tailwind's 'lg' breakpoint is 1024px */
-            .hamburger-menu {
-                display: block; /* Show hamburger on smaller screens */
-            }
-            .sidebar-menu {
-                left: -250px; /* Ensure it's hidden by default on small screens */
-            }
-            .main-content-area {
-                margin-left: 0 !important; /* Remove left margin for main content */
-            }
-            .header-search-input {
-                width: 100%;
-            }
-            #shop-address-container {
-                display: none; /* Hide address on small screens */
-            }
-            .category-icons-row {
-                display: none; /* Hide category icons on small screens */
-            }
+        .btn-restart:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
     </style>
 </head>
-<body class="bg-fdf8f4 text-333">
+<body class="flex flex-col items-center justify-center min-h-screen p-4 sm:p-6 bg-gray-100">
 
-    <!-- Header section, adjusted height and added product category icons -->
-    <header class="fixed top-0 left-0 right-0 z-40 bg-yellow-400 text-gray-800 shadow-lg py-2 px-6 md:px-6 lg:px-16 w-full flex flex-col justify-center h-[140px]">
-        <div class="flex items-center justify-between w-full mb-2"> <!-- Adjusted mb-1 to mb-2 -->
-            <!-- Hamburger Menu Icon and "MENU" text -->
-            <div class="flex flex-col items-center">
-                <div class="hamburger-menu" id="hamburger-menu">
-                    <div class="bar"></div>
-                    <div class="bar"></div>
-                    <div class="bar"></div>
-                </div>
-                <div class="text-sm font-semibold mt-1 text-gray-800">MENU</div>
-            </div>
-
-            <!-- Shop Name and Search Bar -->
-            <div class="flex items-center flex-grow">
-                <h1 id="shop-name-display" class="text-2xl lg:text-3xl font-bold rounded-full py-1 px-4 transition-all duration-300 ease-in-out hover:scale-105 cursor-pointer mr-4 lg:mr-6">
-                    <i class="fas fa-mobile-alt mr-2 text-gray-700"></i><span class="text-gray-900">HHmobile</span><span class="text-red-600">.com</span>
-                </h1>
-                <div class="relative flex items-center w-full max-w-xs md:max-w-md lg:max-w-lg">
-                    <input type="text" id="header-product-search-input" placeholder="Bạn tìm gì..." class="header-search-input focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
-                    <i class="fas fa-search header-search-icon"></i>
-                </div>
-            </div>
-
-            <!-- Cart, Address, and Auth Section -->
-            <div class="flex items-center space-x-4 lg:space-x-6 ml-auto">
-                <div id="cart-section" class="flex items-center">
-                    <button id="open-cart-modal-btn" class="flex items-center text-gray-800 hover:text-gray-900 font-medium py-1 px-2 rounded-full transition-all duration-200 relative text-sm">
-                        <i class="fas fa-shopping-cart text-lg mr-2"></i>
-                        Giỏ hàng
-                        <span id="cart-count" class="absolute -top-1 -right-1 bg-red-600 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">0</span>
-                    </button>
-                </div>
-
-                <div id="shop-address-container" class="flex items-center text-xs text-gray-800 text-right">
-                    <i class="fas fa-map-marker-alt text-base mr-1"></i>
-                    <div class="flex flex-col">
-                        <span class="font-semibold mb-0.5">Đc:</span>
-                        <span id="shop-address-display" class="text-xs italic text-gray-700">Chưa cập nhật</span>
-                    </div>
-                    <button id="open-address-in-map-btn" class="ml-2 bg-gray-200 hover:bg-gray-300 text-gray-800 text-xs py-1 px-2 rounded-full transition-all duration-200">
-                        <i class="fas fa-external-link-alt mr-1"></i>
-                    </button>
-                </div>
-                <div id="auth-section">
-                    <button id="login-status-btn" class="flex items-center bg-blue-600 hover:bg-blue-700 text-white py-2 px-3 rounded-lg transition-all duration-200 shadow-lg text-sm">
-                        <i class="fas fa-user-circle text-lg mr-1"></i>Đăng nhập
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- New row for product category icons - visible on larger screens -->
-        <div class="flex justify-center items-center w-full space-x-40 mt-0 category-icons-row">
-            <a href="#" class="flex flex-col items-center text-gray-800 hover:text-blue-700 transition-colors duration-200 category-link" data-category="Điện thoại iOS">
-                <i class="fab fa-apple text-2xl"></i>
-                <span class="text-xs font-medium mt-0">iOS</span>
-            </a>
-            <a href="#" class="flex flex-col items-center text-gray-800 hover:text-green-700 transition-colors duration-200 category-link" data-category="Điện thoại Android">
-                <i class="fab fa-android text-2xl"></i>
-                <span class="text-xs font-medium mt-0">Android</span>
-            </a>
-            <a href="#" class="flex flex-col items-center text-gray-800 hover:text-purple-700 transition-colors duration-200 category-link" data-category="Tai nghe Airpod">
-                <i class="fas fa-headphones-alt text-2xl"></i>
-                <span class="text-xs font-medium mt-0">Airpod</span>
-            </a>
-            <a href="#" class="flex flex-col items-center text-gray-800 hover:text-red-700 transition-colors duration-200 category-link" data-category="Đồng hồ Apple Watch">
-                <i class="fas fa-watch text-2xl"></i>
-                <span class="text-xs font-medium mt-0">Apple Watch</span>
-            </a>
-        </div>
-    </header>
-
-    <!-- Advertisement banner container, adjusted top position and centering -->
-    <div id="advertisement-banner-container" class="advertisement-banner hidden fixed top-[140px] left-1/2 -translate-x-1/2 z-30 mx-auto w-[98%] md:w-[95%] lg:w-[90%] xl:w-[110%] p-3 rounded-lg h-14">
-        <div class="content" id="advertisement-content"></div>
+    <div class="bg-white p-6 sm:p-10 rounded-xl shadow-lg text-center max-w-lg w-full mb-8">
+        <h1 class="text-3xl sm:text-4xl font-extrabold text-gray-800 mb-4">🚧 Trang web đang bảo trì 🚧</h1>
+        <p class="text-lg sm:text-xl text-gray-600 mb-6">
+            Chúng tôi đang nâng cấp và cải thiện trang web để mang lại trải nghiệm tốt hơn cho bạn.
+            Vui lòng quay lại sau ít phút nhé!
+        </p>
+        <p class="text-base sm:text-lg text-gray-500">
+            Trong lúc chờ đợi, bạn có thể giải trí với trò chơi Doraemon bên dưới.
+            <span class="font-semibold text-blue-600">Nhấn vào khung hoặc chạm vào màn hình để bắt đầu chơi!</span> 😊
+        </p>
     </div>
 
-    <!-- Overlay for hamburger menu -->
-    <div class="overlay" id="menu-overlay"></div>
-
-    <!-- Sidebar/Hamburger Menu -->
-    <aside class="sidebar-menu" id="sidebar-menu">
-        <h2 class="text-xl font-semibold mb-6 text-gray-800 px-4">MENU</h2>
-        <nav>
-            <ul class="space-y-3 px-4">
-                <li><button id="show-products-btn" class="tab-button w-full text-left p-3 rounded-lg font-medium text-base transition-all duration-200 hover:bg-gray-100 active"><i class="fas fa-boxes mr-2"></i>Gian Hàng</button></li>
-                <li><button id="show-created-orders-btn" class="tab-button w-full text-left p-3 rounded-lg font-medium text-base transition-all duration-200 hover:bg-gray-100"><i class="fas fa-clipboard-list mr-2"></i>Đơn Hàng Đã Tạo</button></li>
-                <li><button id="show-shipping-orders-btn" class="tab-button w-full text-left p-3 rounded-lg font-medium text-base transition-all duration-200 hover:bg-gray-100"><i class="fas fa-truck mr-2"></i>Đơn Hàng Đang Vận Chuyển</button></li>
-                <li><button id="show-delivered-orders-btn" class="tab-button w-full text-left p-3 rounded-lg font-medium text-base transition-all duration-200 hover:bg-gray-100"><i class="fas fa-check-circle mr-2"></i>Đơn Hàng Đã Giao</button></li>
-                <li><button id="open-management-modal-btn" class="tab-button w-full text-left p-3 rounded-lg font-medium text-base transition-all duration-200 hover:bg-gray-100"><i class="fas fa-cogs mr-2"></i>Nhập Hàng</button></li>
-                <li><button id="open-settings-modal-btn" class="tab-button w-full text-left p-3 rounded-lg font-medium text-base transition-all duration-200 hover:bg-gray-100"><i class="fas fa-cog mr-2"></i>Cài Đặt</button></li>
-                <li><button id="open-shop-analytics-modal-btn" class="tab-button w-full text-left p-3 rounded-lg font-medium text-base transition-all duration-200 hover:bg-gray-100"><i class="fas fa-chart-line mr-2"></i>Thống Kê</button></li>
-                <li><button id="open-profile-modal-btn" class="tab-button w-full text-left p-3 rounded-lg font-medium text-base transition-all duration-200 hover:bg-gray-100"><i class="fas fa-user mr-2"></i>Hồ sơ</button></li>
-            </ul>
-        </nav>
-    </aside>
-
-    <!-- Main content area, adjusted padding-top to account for taller header and banner -->
-    <div class="flex flex-1 w-full pt-[200px] main-content-area lg:ml-0"> <!-- Removed fixed ml-56/ml-64 -->
-        <section class="flex-1 p-6 rounded-xl shadow-lg bg-white overflow-y-auto w-full">
-            <div id="product-list-section" class="active-section">
-                <h2 class="text-3xl font-semibold mb-6 text-gray-800">Sản Phẩm Nổi Bật</h2>
-                <div id="product-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                </div>
-            </div>
-
-            <div id="created-orders-section" class="hidden">
-                <h2 class="text-3xl font-semibold mb-6 text-gray-800">Đơn Hàng Đã Tạo</h2>
-                <div class="mb-4 flex items-center gap-2">
-                    <input type="text" id="search-created-orders" placeholder="Tìm kiếm đơn hàng đã tạo..." class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <button id="clear-search-created-orders" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-lg transition-all duration-200"><i class="fas fa-times"></i></button>
-                </div>
-                <div id="created-orders-list" class="space-y-4">
-                </div>
-            </div>
-
-            <div id="shipping-orders-section" class="hidden">
-                <h2 class="text-3xl font-semibold mb-6 text-gray-800">Đơn Hàng Đang Vận Chuyển</h2>
-                   <div class="mb-4 flex items-center gap-2">
-                    <input type="text" id="search-shipping-orders" placeholder="Tìm kiếm đơn hàng đang vận chuyển..." class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <button id="clear-search-shipping-orders" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-lg transition-all duration-200"><i class="fas fa-times"></i></button>
-                </div>
-                <div id="shipping-orders-list" class="space-y-4">
-                </div>
-            </div>
-
-            <div id="delivered-orders-section" class="hidden">
-                <h2 class="text-3xl font-semibold mb-6 text-gray-800">Đơn Hàng Đã Giao</h2>
-                <div class="mb-4 flex items-center gap-2">
-                    <input type="text" id="search-delivered-orders" placeholder="Tìm kiếm đơn hàng đã giao..." class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <button id="clear-search-delivered-orders" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-lg transition-all duration-200"><i class="fas fa-times"></i></button>
-                </div>
-                <div id="delivered-orders-list" class="space-y-4">
-                </div>
-            </div>
-        </section>
+    <div class="relative w-full max-w-lg" style="max-width: 700px;"> <!-- Cập nhật max-width cho khung chứa canvas -->
+        <canvas id="dino-canvas"></canvas>
+        <button id="restart-button" class="btn-restart absolute bottom-4 left-1/2 -translate-x-1/2 px-6 py-3 bg-blue-500 text-white font-bold rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 hidden">
+            Chơi Lại
+        </button>
     </div>
 
-    <div id="product-detail-modal" class="hidden fixed inset-0 flex items-center justify-center z-50 modal-overlay p-4">
-        <div class="bg-blue-50 rounded-3xl shadow-2xl p-8 max-w-4xl w-full flex flex-col md:flex-row gap-8 relative modal-content max-h-[85vh] overflow-y-auto">
-            <button id="close-product-modal" class="absolute top-4 right-4 text-gray-600 hover:text-gray-800 text-3xl font-bold">&times;</button>
-            <div class="md:w-1/2 flex items-center justify-center p-4">
-                <img id="modal-product-image" src="" alt="Sản phẩm" class="max-h-96 w-auto object-contain mb-4 rounded-lg shadow-md">
-            </div>
-            <div class="md:w-1/2">
-                <h3 id="modal-product-name" class="text-3xl font-bold mb-4 text-gray-900"></h3>
-                <!-- Thay đổi ở đây: Thêm class "price-original" vào "modal-product-base-price" -->
-                <p class="text-xl font-semibold mb-2 text-gray-700">Giá sản phẩm: <span id="modal-product-base-price" class="font-bold price-original"></span></p>
-                <!-- Thay đổi ở đây: Bỏ class "price-original" khỏi "modal-product-price-display" -->
-                <p class="text-xl font-semibold mb-2 text-gray-700">Giá theo phiên bản: <span id="modal-product-price-display" class="font-bold"></span></p>
-                <p class="text-xs font-semibold mb-2 text-gray-700">GTTT: <span id="modal-product-vat-display" class="font-bold text-black-600"></span></p>
-                <p id="modal-product-discount-display" class="text-xl font-semibold mb-4 price-discounted hidden"></p>
-                <div id="voucher-expiry-message" class="text-red-500 font-bold text-sm mb-4 hidden"></div>
-
-                <div id="product-options" class="mb-6 space-y-4">
-                </div>
-
-                <p class="text-gray-600 mb-2">Số lượng đã bán: <span id="modal-product-sold">Hết hàng</span></p>
-                <p class="text-gray-600 mb-4">Số lượng còn lại: <span id="modal-product-remaining">Hết hàng</span></p>
-                <p id="modal-product-description" class="text-gray-700 mb-4 text-sm"></p>
-
-                <div class="mb-4 text-gray-700 text-sm">
-                    <p class="mb-1"><i class="fas fa-undo-alt mr-2 text-blue-500"></i> Chính sách đổi trả: <span class="font-semibold">30 Ngày</span></p>
-                    <p id="modal-shipping-cost-display"><i class="fas fa-shipping-fast mr-2 text-green-500"></i> Phí vận chuyển: <span class="font-semibold">Thanh toán khi nhận hàng (Miễn phi khi add voucher)</span></p>
-                </div>
-
-                <div class="mb-6">
-                    <label for="voucher-code" class="block text-gray-700 text-sm font-bold mb-2">Mã Voucher:</label>
-                    <div class="flex">
-                        <input type="text" id="voucher-code" class="shadow appearance-none border rounded-l-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Nhập mã voucher">
-                        <button id="apply-voucher-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-r-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200"><i class="fas fa-ticket-alt"></i> Áp Dụng</button>
-                    </div>
-                </div>
-
-                <div class="flex gap-4 mt-6">
-                    <button id="buy-now-detail-btn" class="bg-yellow-400 hover:bg-yellow-500 text-gray-800 font-bold py-3 px-6 rounded-lg flex-1 transition-all duration-200 shadow-lg"><i class="fas fa-dollar-sign mr-2"></i>Mua Ngay</button>
-                    <button id="add-to-cart-detail-btn" class="bg-yellow-400 hover:bg-yellow-500 text-gray-800 font-bold py-3 px-6 rounded-lg flex-1 transition-all duration-200 shadow-lg"><i class="fas fa-cart-plus mr-2"></i>Thêm vào giỏ hàng</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div id="order-creation-modal" class="hidden fixed inset-0 flex items-center justify-center z-50 modal-overlay p-4">
-        <div class="bg-blue-50 rounded-3xl shadow-2xl p-8 max-w-2xl w-full relative modal-content max-h-[85vh] overflow-y-auto">
-            <button id="close-order-modal" class="absolute top-4 right-4 text-gray-600 hover:text-gray-800 text-3xl font-bold">&times;</button>
-            <h3 class="text-3xl font-bold mb-6 text-gray-900 text-center">Tạo Đơn Hàng Mới</h3>
-
-            <div class="mb-6">
-                <p class="text-gray-700 text-lg mb-2">Mã đơn hàng: <span id="order-id-display" class="font-semibold text-blue-700"></span></p>
-                <div id="order-products-summary" class="border p-4 rounded-lg bg-gray-50 max-h-40 overflow-y-auto">
-                </div>
-            </div>
-
-            <form id="order-form" class="space-y-4">
-                <div>
-                    <label for="customer-name" class="block text-gray-700 text-lg font-bold mb-2">Họ tên:</label>
-                    <input type="text" id="customer-name" class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-                </div>
-                <div>
-                    <label for="customer-phone" class="block text-gray-700 text-lg font-bold mb-2">Số điện thoại liên hệ:</label>
-                    <div class="masked-input-wrapper">
-                        <input type="tel" id="customer-phone" class="shadow appearance-none border rounded-lg w-full py-3 px-4 pr-12 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-                        <button type="button" class="toggle-visibility-btn" data-target-id="customer-phone">
-                            <i class="fas fa-eye"></i>
-                        </button>
-                    </div>
-                </div>
-                <div>
-                    <label for="customer-address" class="block text-gray-700 text-lg font-bold mb-2">Địa chỉ nhận hàng:</label>
-                    <div class="masked-input-wrapper">
-                        <textarea id="customer-address" class="shadow appearance-none border rounded-lg w-full py-3 px-4 pr-12 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 h-24 resize-none" required></textarea>
-                        <button type="button" class="toggle-visibility-btn" data-target-id="customer-address">
-                            <i class="fas fa-eye"></i>
-                        </button>
-                    </div>
-                </div>
-
-                <div>
-                    <label for="order-location" class="block text-gray-700 text-lg font-bold mb-2">Vị trí kho:</label>
-                    <input type="text" id="order-location" class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Chi nhánh kho">
-                </div>
-                <div>
-                    <label for="estimated-delivery-date" class="block text-gray-700 text-lg font-bold mb-2">Ngày dự kiến nhận hàng:</label>
-                    <input type="date" id="estimated-delivery-date" class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-2 focus:ring-blue-500">
-                </div>
-
-                <button id="view-on-map-btn" type="button" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg w-full transition-all duration-200 shadow-lg">
-                    <i class="fas fa-map-marked-alt mr-2"></i>Xem trên Bản Đồ
-                </button>
-
-                <div class="order-status-bar">
-                    <div class="order-status-step active" data-status="created">Tạo Đơn Hàng</div>
-                    <div class="order-status-step" data-status="shipping">Đang Vận Chuyển</div>
-                    <div class="order-status-step" data-status="delivered">Đã Giao Hàng</div>
-                </div>
-
-                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg w-full transition-all duration-200 shadow-lg"><i class="fas fa-check-square mr-2"></i>Xác Nhận Đơn Hàng</button>
-            </form>
-        </div>
-    </div>
-
-    <div id="edit-shipping-order-modal" class="hidden fixed inset-0 flex items-center justify-center z-50 modal-overlay p-4">
-        <div class="bg-blue-50 rounded-3xl shadow-2xl p-8 max-w-xl w-full relative modal-content max-h-[85vh] overflow-y-auto">
-            <button id="close-edit-shipping-modal" class="absolute top-4 right-4 text-gray-600 hover:text-gray-800 text-3xl font-bold">&times;</button>
-            <h3 class="text-3xl font-bold mb-6 text-gray-900 text-center">Chỉnh Sửa Thông Tin Vận Chuyển</h3>
-            <p class="text-gray-700 text-lg mb-4">Đơn hàng: <span id="edit-shipping-order-id-display" class="font-semibold text-blue-700"></span></p>
-
-            <form id="edit-shipping-order-form" class="space-y-4">
-                <input type="hidden" id="edit-shipping-order-hidden-id">
-                <div>
-                    <label for="edit-order-location" class="block text-gray-700 text-lg font-bold mb-2">Vị trí hiện tại:</label>
-                    <input type="text" id="edit-order-location" class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Ví dụ: Đang ở kho Hồ Chí Minh">
-                </div>
-                <div>
-                    <label for="edit-estimated-delivery-date" class="block text-gray-700 text-lg font-bold mb-2">Ngày dự kiến nhận hàng:</label>
-                    <input type="date" id="edit-estimated-delivery-date" class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-2 focus:ring-blue-500">
-                </div>
-                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg w-full transition-all duration-200 shadow-lg"><i class="fas fa-save mr-2"></i>Lưu Thay Đổi</button>
-            </form>
-        </div>
-    </div>
-
-    <div id="cart-modal" class="hidden fixed inset-0 flex items-center justify-center z-50 modal-overlay p-4">
-        <div class="bg-blue-50 rounded-3xl shadow-2xl p-8 max-w-3xl w-full relative modal-content max-h-[85vh] overflow-y-auto">
-            <button id="close-cart-modal" class="absolute top-4 right-4 text-gray-600 hover:text-gray-800 text-3xl font-bold">&times;</button>
-            <h3 class="text-3xl font-bold mb-6 text-gray-900 text-center">Giỏ Hàng Của Bạn</h3>
-
-            <div class="mb-4 flex items-center gap-2">
-                <input type="text" id="search-cart-items" placeholder="Tìm kiếm sản phẩm trong giỏ hàng..." class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <button id="clear-search-cart-items" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-lg transition-all duration-200"><i class="fas fa-times"></i></button>
-            </div>
-
-            <div id="cart-items-list" class="space-y-4 mb-6">
-                <p class="text-gray-500 italic text-center">Giỏ hàng trống.</p>
-            </div>
-
-            <div class="flex justify-between items-center border-t pt-4 border-gray-200">
-                <span class="text-xl font-bold text-gray-900">Tổng cộng: <span id="cart-total-amount">0 VND</span></span>
-                <button id="buy-all-cart-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition-all duration-200 shadow-lg"><i class="fas fa-credit-card mr-2"></i>Mua Ngay Tất Cả</button>
-            </div>
-        </div>
-    </div>
-
-
-    <div id="shop-management-modal" class="hidden fixed inset-0 flex items-center justify-center z-50 modal-overlay p-4">
-        <div class="bg-blue-50 rounded-3xl shadow-2xl p-8 max-w-4xl w-full relative overflow-y-auto max-h-[90vh] modal-content">
-            <button id="close-management-modal" class="absolute top-4 right-4 text-gray-600 hover:text-gray-800 text-3xl font-bold">&times;</button>
-            <h3 class="text-3xl font-bold mb-6 text-gray-900 text-center">Cửa Hàng</h3>
-
-            <div id="management-content-area" class="relative-container rounded-3xl p-4">
-                <div class="mb-8 border-b pb-6 border-gray-200">
-                    <h4 class="text-2xl font-semibold mb-4 text-gray-800">Quản lý Sản phẩm Hiện Có</h4>
-                    <div id="product-management-list" class="space-y-4">
-                        <p class="text-gray-500 italic">Đang tải danh sách sản phẩm...</p>
-                    </div>
-                </div>
-
-
-                <div class="mb-8 border-b pb-6 border-gray-200">
-                    <h4 id="add-edit-product-title" class="text-2xl font-semibold mb-4 text-gray-800">Thêm Mặt Hàng Mới</h4>
-                    <form id="add-edit-product-form" class="space-y-4">
-                        <input type="hidden" id="edit-product-id">
-                        <div>
-                            <label for="new-product-name" class="block text-gray-700 text-lg font-bold mb-2">Tên Sản Phẩm:</label>
-                            <input type="text" id="new-product-name" class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-                        </div>
-                        <div>
-                            <label for="new-product-category" class="block text-gray-700 text-lg font-bold mb-2">Phân loại sản phẩm:</label>
-                            <select id="new-product-category" class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-                                <option value="">Chọn loại sản phẩm</option>
-                                <option value="Điện thoại iOS">Điện thoại iOS</option>
-                                <option value="Điện thoại Android">Điện thoại Android</option>
-                                <option value="Tai nghe Airpod">Tai nghe Airpod</option>
-                                <option value="Đồng hồ Apple Watch">Đồng hồ Apple Watch</option>
-                                <option value="Khác">Khác</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label for="new-product-base-price" class="block text-gray-700 text-lg font-bold mb-2">Giá sản phẩm (VND):</label>
-                            <input type="number" id="new-product-base-price" class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500" required min="0">
-                        </div>
-
-                        <div>
-                            <label for="new-product-image" class="block text-gray-700 text-lg font-bold mb-2">URL Hình Ảnh Chính (URL trực tiếp, bao gồm GitHub Raw hoặc Base64):</label>
-                            <div class="flex gap-2">
-                                <input type="url" id="new-product-image" class="shadow appearance-none border rounded-l-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="https://example.com/image.jpg hoặc chuỗi Base64 dài">
-                                <button type="button" id="upload-main-image-btn" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-r-lg transition-all duration-200 text-sm flex-shrink-0"><i class="fas fa-upload mr-2"></i>Tải ảnh lên</button>
-                            </div>
-                        </div>
-                        <div>
-                            <label for="new-product-description" class="block text-gray-700 text-lg font-bold mb-2">Mô tả sản phẩm:</label>
-                            <textarea id="new-product-description" class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 h-20 resize-none"></textarea>
-                        </div>
-                        <div>
-                            <label for="new-product-reviews" class="block text-gray-700 text-lg font-bold mb-2">Lượt Đánh Giá (Số lượng):</label>
-                            <input type="number" id="new-product-reviews" class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500" value="0" min="0">
-                        </div>
-
-                        <div class="border p-4 rounded-lg bg-gray-50">
-                            <h5 class="text-xl font-semibold mb-3 text-gray-700">Tùy Chọn Màu Sắc (kèm Giá tác động)</h5>
-                            <div id="color-options-container" class="space-y-3">
-                            </div>
-                            <button type="button" id="add-color-option-btn" class="mt-4 bg-purple-500 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded-lg transition-all duration-200"><i class="fas fa-plus mr-2"></i>Thêm Màu Sắc</button>
-                        </div>
-
-                        <div class="border p-4 rounded-lg bg-gray-50">
-                            <h5 class="text-xl font-semibold mb-3 text-gray-700">Tùy Chọn Dung Lượng (kèm Giá tác động)</h5>
-                            <div id="storage-options-container" class="space-y-3">
-                            </div>
-                            <button type="button" id="add-storage-option-btn" class="mt-4 bg-purple-500 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded-lg transition-all duration-200"><i class="fas fa-plus mr-2"></i>Thêm Dung Lượng</button>
-                        </div>
-
-                        <div class="border p-4 rounded-lg bg-yellow-50">
-                            <h5 class="text-xl font-semibold mb-3 text-gray-700">Các Biến Thể Sản Phẩm (Màu sắc + Dung lượng, kèm số lượng & Giá tác động riêng)</h5>
-                            <div id="variants-container" class="space-y-3">
-                            </div>
-                            <button type="button" id="add-variant-btn" class="mt-4 bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-4 rounded-lg transition-all duration-200"><i class="fas fa-plus mr-2"></i>Thêm Biến Thể</button>
-                            <p class="text-sm text-gray-600 mt-2">Lưu ý: Chỉ thêm biến thể sau khi đã định nghĩa các Tùy chọn Màu sắc và Dung lượng phía trên.</p>
-                        </div>
-
-                        <button type="submit" id="submit-product-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg w-full transition-all duration-200 shadow-lg mt-6"><i class="fas fa-save mr-2"></i>Thêm Sản Phẩm</button>
-                        <button type="button" id="cancel-edit-btn" class="hidden bg-gray-500 hover:bg-gray-600 text-white font-bold py-3 px-6 rounded-lg w-full transition-all duration-200 shadow-lg mt-2"><i class="fas fa-times-circle mr-2"></i>Hủy Chỉnh Sửa</button>
-                    </form>
-                </div>
-
-                <div class="mb-8 border-b pb-6 border-gray-200">
-                    <h4 class="text-2xl font-semibold mb-4 text-gray-800">Thêm Mã Voucher Mới</h4>
-                    <form id="add-voucher-form" class="space-y-4">
-                        <div>
-                            <label for="new-voucher-code" class="block text-gray-700 text-lg font-bold mb-2">Mã Voucher (để trống nếu muốn tạo ngẫu nhiên):</label>
-                            <input type="text" id="new-voucher-code" class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        </div>
-                        <div>
-                            <label for="new-voucher-quantity" class="block text-gray-700 text-lg font-bold mb-2">Số lượng voucher cần tạo:</label>
-                            <input type="number" id="new-voucher-quantity" class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500" value="1" min="1">
-                        </div>
-                        <div>
-                            <label for="new-voucher-code-length" class="block text-gray-700 text-lg font-bold mb-2">Độ dài mã voucher ngẫu nhiên (chỉ dùng nếu Mã Voucher để trống):</label>
-                            <input type="number" id="new-voucher-code-length" class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500" value="8" min="4" max="16">
-                        </div>
-                        <div>
-                            <label for="new-voucher-value" class="block text-gray-700 text-lg font-bold mb-2">Giá Trị Voucher (ví dụ: 0.10 cho 10%, 50000 cho 50.000 VND):</label>
-                            <input type="number" step="any" id="new-voucher-value" class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500" required min="0">
-                        </div>
-
-                        <div>
-                            <label for="new-voucher-expiry" class="block text-gray-700 text-lg font-bold mb-2">Thời gian hết hạn (YYYY-MM-DD HH:MM:SS):</label>
-                            <input type="datetime-local" id="new-voucher-expiry" class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-                        </div>
-                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg w-full transition-all duration-200 shadow-lg"><i class="fas fa-plus-square mr-2"></i>Thêm Voucher</button>
-                    </form>
-
-                    <div class="mt-8">
-                        <h4 class="text-2xl font-semibold mb-4 text-gray-800">Voucher Hiện Có</h4>
-                        <div id="current-vouchers-list" class="space-y-2">
-                            <p class="text-gray-500 italic">Chưa có voucher nào.</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- NEW ADMIN VOUCHER SECTION -->
-                <div class="mt-8 border-b pb-6 border-gray-200">
-                    <h4 class="text-2xl font-semibold mb-4 text-gray-800">Thêm Mã Voucher Admin (Dành riêng cho Admin)</h4>
-                    <form id="add-admin-voucher-form" class="space-y-4">
-                         <div>
-                            <label for="new-admin-voucher-code" class="block text-gray-700 text-lg font-bold mb-2">Mã Voucher Admin (để trống nếu muốn tạo ngẫu nhiên):</label>
-                            <input type="text" id="new-admin-voucher-code" class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        </div>
-                        <div>
-                            <label for="new-admin-voucher-quantity" class="block text-gray-700 text-lg font-bold mb-2">Số lượng voucher admin cần tạo:</label>
-                            <input type="number" id="new-admin-voucher-quantity" class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500" value="1" min="1">
-                        </div>
-                        <div>
-                            <label for="new-admin-voucher-code-length" class="block text-gray-700 text-lg font-bold mb-2">Độ dài mã voucher admin ngẫu nhiên (chỉ dùng nếu Mã Voucher Admin để trống):</label>
-                            <input type="number" id="new-admin-voucher-code-length" class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500" value="8" min="4" max="16">
-                        </div>
-                        <div>
-                            <label for="new-admin-voucher-value" class="block text-gray-700 text-lg font-bold mb-2">Giá Trị Voucher (ví dụ: 0.10 cho 10%, 50000 cho 50.000 VND, freeship):</label>
-                            <input type="text" id="new-admin-voucher-value" class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-                        </div>
-                        <div>
-                            <label for="new-admin-voucher-expiry" class="block text-gray-700 text-lg font-bold mb-2">Thời gian hết hạn (YYYY-MM-DD HH:MM:SS):</label>
-                            <input type="datetime-local" id="new-admin-voucher-expiry" class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-                        </div>
-                        <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-lg w-full transition-all duration-200 shadow-lg"><i class="fas fa-plus-square mr-2"></i>Thêm Voucher Admin</button>
-                    </form>
-                </div>
-                <!-- END NEW ADMIN VOUCHER SECTION -->
-
-                <div class="mt-8">
-                    <h4 class="text-2xl font-semibold mb-4 text-gray-800">Quản lý Gói Bảo Hành</h4>
-                    <form id="add-edit-warranty-package-form" class="space-y-4">
-                        <input type="hidden" id="edit-warranty-package-id">
-                        <div>
-                            <label for="new-warranty-package-name" class="block text-gray-700 text-lg font-bold mb-2">Tên Gói Bảo Hành:</label>
-                            <input type="text" id="new-warranty-package-name" class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-                        </div>
-                        <div>
-                            <label for="new-warranty-package-price" class="block text-gray-700 text-lg font-bold mb-2">Giá (VND):</label>
-                            <input type="number" id="new-warranty-package-price" class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500" required min="0">
-                        </div>
-                        <div>
-                            <label for="new-warranty-package-discount" class="block text-gray-700 text-lg font-bold mb-2">Giảm Giá (%):</label>
-                            <input type="number" id="new-warranty-package-discount" class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500" value="0" min="0" max="100">
-                        </div>
-                        <button type="submit" id="submit-warranty-package-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg w-full transition-all duration-200 shadow-lg"><i class="fas fa-plus-square mr-2"></i>Thêm Gói Bảo Hành</button>
-                        <button type="button" id="cancel-edit-warranty-package-btn" class="hidden bg-gray-500 hover:bg-gray-600 text-white font-bold py-3 px-6 rounded-lg w-full transition-all duration-200 shadow-lg mt-2"><i class="fas fa-times-circle mr-2"></i>Hủy Chỉnh Sửa</button>
-                    </form>
-
-                    <div class="mt-8">
-                        <h4 class="text-2xl font-semibold mb-4 text-gray-800">Các Gói Bảo Hành Hiện Có</h4>
-                        <div id="current-warranty-packages-list" class="space-y-2">
-                            <p class="text-gray-500 italic">Chưa có gói bảo hành nào.</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div id="shop-settings-modal" class="hidden fixed inset-0 flex items-center justify-center z-50 modal-overlay p-4">
-        <div class="bg-blue-50 rounded-3xl shadow-2xl p-8 max-w-xl w-full relative modal-content max-h-[85vh] overflow-y-auto">
-            <button id="close-settings-modal" class="absolute top-4 right-4 text-gray-600 hover:text-gray-800 text-3xl font-bold">&times;</button>
-            <h3 class="text-3xl font-bold mb-6 text-gray-900 text-center">Cài Đặt Cửa Hàng</h3>
-
-            <div id="settings-content-area" class="relative-container rounded-3xl p-4">
-                <form id="shop-settings-form" class="space-y-4">
-                    <div>
-                        <label for="shop-name-input" class="block text-gray-700 text-lg font-bold mb-2">Tên Cửa Hàng:</label>
-                        <input type="text" id="shop-name-input" class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-                    </div>
-                    <div>
-                        <label for="shop-address-input" class="block text-gray-700 text-lg font-bold mb-2">Đc:</label>
-                        <input type="text" id="shop-address-input" class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Nhập địa chỉ cửa hàng của bạn">
-                    </div>
-                    <div>
-                        <label for="background-image-url" class="block text-gray-700 text-lg font-bold mb-2">URL Hình Nền:</label>
-                        <div class="flex gap-2">
-                            <input type="url" id="background-image-url" class="shadow appearance-none border rounded-l-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="https://example.com/image.jpg">
-                                <button type="button" id="upload-background-btn" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-r-lg transition-all duration-200 text-sm flex-shrink-0"><i class="fas fa-upload mr-2"></i>Tải ảnh lên</button>
-                            </div>
-                        <small class="text-gray-500">Để trống nếu không muốn dùng hình nền.</small>
-                    </div>
-                    <div>
-                        <label for="advertisement-text-input" class="block text-gray-700 text-lg font-bold mb-2">Nội dung quảng cáo:</label>
-                        <input type="text" id="advertisement-text-input" class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Ví dụ: Giảm giá 50% tất cả sản phẩm!">
-                        <small class="text-gray-500">Để trống để ẩn banner quảng cáo.</small>
-                    </div>
-                    <div>
-                        <label for="advertisement-animation-select" class="block text-gray-700 text-lg font-bold mb-2">Hiệu ứng quảng cáo:</label>
-                        <select id="advertisement-animation-select" class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            <option value="none">Không có</option>
-                            <option value="marquee">Chữ chạy</option>
-                            <option value="flicker">Nhấp nháy</option>
-                        </select>
-                    </div>
-
-                    <div class="border p-4 rounded-lg bg-gray-50 space-y-4">
-                        <h4 class="text-xl font-semibold mb-3 text-gray-700">Cài đặt Thanh toán QR Code Ngân hàng</h4>
-                        <div>
-                            <label for="bank-name-input" class="block text-gray-700 text-lg font-bold mb-2">Tên Ngân hàng:</label>
-                            <input type="text" id="bank-name-input" class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Ví dụ: Vietcombank">
-                        </div>
-                        <div>
-                            <label for="account-number-input" class="block text-gray-700 text-lg font-bold mb-2">Số Tài khoản:</label>
-                            <input type="text" id="account-number-input" class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Ví dụ: 0123456789">
-                        </div>
-                        <div>
-                            <label for="account-holder-input" class="block text-gray-700 text-lg font-bold mb-2">Tên Chủ tài khoản:</label>
-                            <input type="text" id="account-holder-input" class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Ví dụ: NGUYEN VAN A">
-                        </div>
-                        <div>
-                            <label for="qr-code-image-url-input" class="block text-gray-700 text-lg font-bold mb-2">URL Ảnh QR Code Ngân hàng:</label>
-                            <div class="flex gap-2">
-                                <input type="url" id="qr-code-image-url-input" class="shadow appearance-none border rounded-l-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="https://example.com/qr_code.png">
-                                <button type="button" id="upload-qr-code-btn" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-r-lg transition-all duration-200 text-sm flex-shrink-0"><i class="fas fa-upload mr-2"></i>Tải ảnh lên</button>
-                            </div>
-                            <small class="text-gray-500">Đây là ảnh QR Code mà khách hàng sẽ quét để thanh toán.</small>
-                        </div>
-                    </div>
-
-                    <div class="border p-4 rounded-lg bg-gray-50 space-y-4">
-                        <h4 class="text-xl font-semibold mb-3 text-gray-700">Cài đặt Đơn vị Vận chuyển</h4>
-                        <div>
-                            <label for="shipping-unit-name-input" class="block text-gray-700 text-lg font-bold mb-2">Tên Đơn vị Vận chuyển (mặc định GHN Express):</label>
-                            <input type="text" id="shipping-unit-name-input" class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Ví dụ: GHN Express, GHTK" value="GHN Express">
-                        </div>
-                        <div>
-                            <label for="shipping-unit-image-url-input" class="block text-gray-700 text-lg font-bold mb-2">URL Ảnh Đơn vị Vận chuyển:</label>
-                            <div class="flex gap-2">
-                                <input type="url" id="shipping-unit-image-url-input" class="shadow appearance-none border rounded-l-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="https://example.com/shipping_logo.png">
-                                <button type="button" id="upload-shipping-unit-image-btn" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-r-lg transition-all duration-200 text-sm flex-shrink-0"><i class="fas fa-upload mr-2"></i>Tải ảnh lên</button>
-                            </div>
-                            <small class="text-gray-500">Ảnh logo của đơn vị vận chuyển.</small>
-                        </div>
-                    </div>
-
-                    <div class="border p-4 rounded-lg bg-gray-50 space-y-4">
-                        <h4 class="text-xl font-semibold mb-3 text-gray-700">Cài đặt Admin</h4>
-                        <div>
-                            <label for="admin-email-input" class="block text-gray-700 text-lg font-bold mb-2">Email Admin:</label>
-                            <input type="email" id="admin-email-input" class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="admin@example.com">
-                            <small class="text-gray-500">Địa chỉ email của tài khoản quản trị viên.</small>
-                        </div>
-                    </div>
-
-                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg w-full transition-all duration-200 shadow-lg"><i class="fas fa-save mr-2"></i>Lưu Cài Đặt</button>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <div id="shop-analytics-modal" class="hidden fixed inset-0 flex items-center justify-center z-50 modal-overlay p-4">
-        <div class="bg-blue-50 rounded-3xl shadow-2xl p-8 max-w-3xl w-full relative modal-content max-h-[85vh] overflow-y-auto">
-            <button id="close-analytics-modal" class="absolute top-4 right-4 text-gray-600 hover:text-gray-800 text-3xl font-bold">&times;</button>
-            <h3 class="text-3xl font-bold mb-6 text-gray-900 text-center">Thống Kê Cửa Hàng</h3>
-
-            <div id="analytics-content-area" class="relative-container rounded-3xl p-4">
-                <div class="mb-6 flex flex-col md:flex-row items-center gap-4">
-                    <div class="flex-1 w-full">
-                        <label for="report-start-date" class="block text-gray-700 text-sm font-bold mb-2">Từ ngày:</label>
-                        <input type="date" id="report-start-date" class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    </div>
-                    <div class="flex-1 w-full">
-                        <label for="report-end-date" class="block text-gray-700 text-sm font-bold mb-2">Đến ngày:</label>
-                        <input type="date" id="report-end-date" class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    </div>
-                    <button id="generate-report-btn" class="mt-6 md:mt-0 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition-all duration-200 flex-shrink-0"><i class="fas fa-chart-bar mr-2"></i>Tạo Báo Cáo</button>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                    <div class="bg-white p-6 rounded-lg shadow-md">
-                        <h4 class="text-xl font-semibold text-gray-800 mb-4">Tổng Doanh Thu</h4>
-                        <p id="total-revenue-display" class="text-3xl font-bold text-green-600">0 VND</p>
-                    </div>
-                    <div class="bg-white p-6 rounded-lg shadow-md">
-                        <h4 class="text-xl font-semibold text-gray-800 mb-4">Số Lượng Đơn Hàng</h4>
-                        <p id="total-orders-display" class="text-3xl font-bold text-purple-600">0</p>
-                    </div>
-                    <div class="bg-white p-6 rounded-lg shadow-md col-span-1 md:col-span-2">
-                        <h4 class="text-xl font-semibold text-gray-800 mb-4">Sản Phẩm Bán Chạy Nhất</h4>
-                        <ul id="top-selling-products-list" class="list-disc pl-5 text-gray-700">
-                            <li class="italic text-gray-500">Chưa có dữ liệu.</li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div id="payment-vat-modal" class="hidden fixed inset-0 flex items-center justify-center z-50 modal-overlay p-4">
-        <div class="bg-blue-50 rounded-3xl shadow-2xl p-8 max-w-lg w-full relative modal-content max-h-[85vh] overflow-y-auto">
-            <button id="close-payment-vat-modal" class="absolute top-4 right-4 text-gray-600 hover:text-gray-800 text-3xl font-bold">&times;</button>
-            <h3 class="text-2xl font-bold mb-6 text-gray-900 text-center">Thuế Giá Trị Gia Tăng (VAT)</h3>
-
-            <div id="qr-payment-details" class="flex flex-col items-center mb-6">
-                <img id="qr-code-display" src="" onerror="this.onerror=null;this.src='https://placehold.co/200x200/cccccc/333333?text=QR+Code';" alt="Mã QR Ngân hàng" class="w-48 h-48 object-contain rounded-lg mb-4 shadow-md">
-                <p class="text-gray-700 text-lg font-semibold"><i class="fas fa-university mr-2 text-blue-600"></i>Ngân hàng: <span id="bank-name-display" class="font-bold"></span></p>
-                <p class="text-gray-700 text-lg font-semibold"><i class="fas fa-credit-card mr-2 text-green-600"></i>Số tài khoản: <span id="account-number-display" class="font-bold"></span></p>
-                <p class="text-gray-700 text-lg font-semibold mb-4"><i class="fas fa-user-circle mr-2 text-purple-600"></i>Chủ tài khoản: <span id="account-holder-display" class="font-bold"></span></p>
-                <p class="text-gray-700 text-xl font-bold">Giá đơn hàng (chưa VAT): <span id="vat-base-amount" class="text-blue-700">0 VND</span></p>
-                <p class="text-gray-700 text-xl font-bold">Tổng tiền VAT (10%): <span id="total-vat-original-display" class="text-blue-700">0 VND</span></p>
-                <p class="text-gray-700 text-xl font-bold">Shop hỗ trợ (8%): <span id="shop-support-vat-display" class="text-blue-700">0 VND</span></p>
-                <p class="text-gray-700 text-xl font-bold">Khách hàng thanh toán (2%): <span id="payment-modal-vat-total" class="text-blue-700">0 VND</span></p>
-            </div>
-
-            <div class="mb-4">
-                <label for="payment-amount-input" class="block text-gray-700 text-lg font-bold mb-2">Phí VAT khách hàng cần thanh cho đơn hàng:</label>
-                <input type="text" id="payment-amount-input" class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Phí VAT">
-            </div>
-
-            <div class="mb-6 bg-gray-100 p-4 rounded-lg">
-                <p class="text-gray-700 text-lg font-semibold">Thanh toán khi nhận hàng: <span id="amount-paid-display" class="font-bold text-green-600">0 VND</span></p>
-                <p class="text-gray-700 text-lg font-semibold">Khách hàng thanh toán (2%): <span id="remaining-payment-display" class="font-bold text-red-600">0 VND</span></p>
-            </div>
-
-            <button id="confirm-payment-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg w-full transition-all duration-200 shadow-lg"><i class="fas fa-check-circle mr-2"></i>Thanh Toán</button>
-            <button id="admin-confirm-vat-payment-btn" class="hidden mt-4 bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg w-full transition-all duration-200 shadow-lg"><i class="fas fa-check-circle mr-2"></i>Admin Xác Nhận</button>
-        </div>
-    </div>
-
-    <div id="order-tracking-modal" class="hidden fixed inset-0 flex items-center justify-center z-50 modal-overlay p-4">
-        <div class="bg-blue-50 rounded-3xl shadow-2xl p-8 max-w-xl w-full relative modal-content max-h-[85vh] overflow-y-auto">
-            <button id="close-order-tracking-modal" class="absolute top-4 right-4 text-gray-600 hover:text-gray-800 text-3xl font-bold">&times;</button>
-            <h3 class="text-3xl font-bold mb-6 text-gray-900 text-center">Theo Dõi Đơn Hàng</h3>
-
-            <div class="flex flex-col items-center mb-6">
-                <img id="tracking-shipping-unit-image" src="" onerror="this.onerror=null;this.src='https://placehold.co/200x100/cccccc/333333?text=Shipping+Unit';" alt="Đơn vị vận chuyển" class="w-48 h-24 object-contain mb-4 rounded-lg shadow-sm">
-                <p class="text-gray-700 text-lg font-semibold"><i class="fas fa-truck mr-2 text-blue-600"></i>Đơn vị vận chuyển: <span id="tracking-shipping-unit-name" class="font-bold">GHN Express</span></p>
-            </div>
-
-            <p class="text-gray-700 text-lg mb-4">Mã đơn hàng: <span id="tracking-order-id" class="font-semibold text-blue-700"></span></p>
-
-            <div class="mb-4">
-                <p class="text-gray-700 text-lg font-semibold">Sản phẩm:</p>
-                <div id="tracking-product-details" class="border p-3 rounded-lg bg-gray-100">
-                </div>
-            </div>
-
-            <div class="mb-4">
-                <p class="text-gray-700 text-lg font-semibold">Địa chỉ hiện tại:</p>
-                <p id="tracking-current-location" class="text-gray-800 ml-4"></p>
-            </div>
-
-            <div class="mb-6">
-                <p class="text-gray-700 text-lg font-semibold">Điểm đến:</p>
-                <p id="tracking-destination" class="text-gray-800 ml-4"></p>
-            </div>
-
-            <button id="check-route-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg w-full transition-all duration-200 shadow-lg">
-                <i class="fas fa-route mr-2"></i>Theo dõi trực tuyến
-            </button>
-        </div>
-    </div>
-
-    <div id="payment-warranty-modal" class="hidden fixed inset-0 flex items-center justify-center z-50 modal-overlay p-4">
-        <div class="bg-blue-50 rounded-3xl shadow-2xl p-8 max-w-lg w-full relative modal-content max-h-[85vh] overflow-y-auto">
-            <button id="close-payment-warranty-modal" class="absolute top-4 right-4 text-gray-600 hover:text-gray-800 text-3xl font-bold">&times;</button>
-            <h3 class="text-2xl font-bold mb-6 text-gray-900 text-center">Chọn Gói Bảo Hành</h3>
-
-            <div id="warranty-packages-selection" class="space-y-3 mb-6">
-            </div>
-
-            <div id="qr-payment-details-warranty" class="flex flex-col items-center mb-6 border-t pt-6 border-gray-200">
-                <img id="qr-code-display-warranty" src="" onerror="this.onerror=null;this.src='https://placehold.co/200x200/cccccc/333333?text=QR+Code';" alt="Mã QR Ngân hàng" class="w-48 h-48 object-contain rounded-lg mb-4 shadow-md">
-                <p class="text-gray-700 text-lg font-semibold"><i class="fas fa-university mr-2 text-blue-600"></i>Ngân hàng: <span id="bank-name-display-warranty" class="font-bold"></span></p>
-                <p class="text-gray-700 text-lg font-semibold"><i class="fas fa-credit-card mr-2 text-green-600"></i>Số tài khoản: <span id="account-number-display-warranty" class="font-bold"></span></p>
-                <p class="text-gray-700 text-lg font-semibold mb-4"><i class="fas fa-user-circle mr-2 text-purple-600"></i>Chủ tài khoản: <span id="account-holder-display-warranty" class="font-bold"></span></p>
-                <p class="text-gray-700 text-xl font-bold">Tổng tiền cần thanh toán: <span id="warranty-payment-total" class="text-blue-700">0 VND</span></p>
-            </div>
-
-            <button id="confirm-warranty-payment-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg w-full transition-all duration-200 shadow-lg"><i class="fas fa-check-circle mr-2"></i>Xác Nhận Thanh Toán</button>
-            <button id="admin-confirm-warranty-btn" class="hidden mt-4 bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg w-full transition-all duration-200 shadow-lg"><i class="fas fa-check-circle mr-2"></i>Admin Xác Nhận</button>
-        </div>
-    </div>
-
-    <div id="login-register-modal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 p-4">
-        <div class="bg-white rounded-xl shadow-2xl p-8 max-w-md w-full text-center relative modal-content">
-            <button id="close-login-register-modal" class="absolute top-4 right-4 text-gray-600 hover:text-gray-800 text-3xl font-bold">&times;</button>
-            <h3 id="auth-modal-title" class="text-2xl font-bold text-gray-800 mb-6">Đăng nhập</h3>
-
-            <div id="login-form">
-                <div class="mb-4 text-left">
-                    <label for="login-username" class="block text-gray-700 text-sm font-semibold mb-2">Tên đăng nhập (Email)</label>
-                    <input type="email" id="login-username" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-transparent transition duration-200 text-gray-900">
-                </div>
-                <div class="mb-6 text-left">
-                    <label for="login-password" class="block text-gray-700 text-sm font-semibold mb-2">Mật khẩu</label>
-                    <input type="password" id="login-password" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-transparent transition duration-200 text-gray-900">
-                </div>
-                <p id="login-error-message" class="text-red-500 text-sm mb-4 hidden"></p>
-                <button id="login-submit-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg shadow-md transition duration-300 transform hover:scale-105 active:scale-95">
-                    Đăng nhập
-                </button>
-                <p class="mt-4 text-gray-600">
-                    Chưa có tài khoản? <a href="#" id="show-register-form-link" class="text-blue-600 hover:underline">Đăng ký ngay</a>
-                </p>
-                <p class="mt-2 text-gray-600">
-                    <a href="#" id="forgot-password-link" class="text-blue-600 hover:underline">Quên mật khẩu?</a>
-                </p>
-            </div>
-
-            <div id="register-form" class="hidden max-h-[70vh] overflow-y-auto">
-                <div class="mb-4 text-left">
-                    <label for="register-username" class="block text-gray-700 text-sm font-semibold mb-2">Tên đăng nhập (Email)</label>
-                    <input type="email" id="register-username" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-transparent transition duration-200 text-gray-900">
-                </div>
-                <div class="mb-4 text-left">
-                    <label for="register-password" class="block text-gray-700 text-sm font-semibold mb-2">Mật khẩu</label>
-                    <input type="password" id="register-password" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-transparent transition duration-200 text-gray-900">
-                </div>
-                <div class="mb-4 text-left">
-                    <label for="register-confirm-password" class="block text-gray-700 text-sm font-semibold mb-2">Xác nhận lại mật khẩu</label>
-                    <input type="password" id="register-confirm-password" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-transparent transition duration-200 text-gray-900">
-                </div>
-                <div class="mb-4 text-left">
-                    <label for="register-fullname" class="block text-gray-700 text-sm font-semibold mb-2">Họ và tên</label>
-                    <input type="text" id="register-fullname" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-transparent transition duration-200 text-gray-900">
-                </div>
-                <div class="mb-4 text-left">
-                    <label for="register-phone" class="block text-gray-700 text-sm font-semibold mb-2">Số điện thoại liên hệ</label>
-                    <input type="tel" id="register-phone" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-transparent transition duration-200 text-gray-900">
-                </div>
-                <div class="mb-6 text-left">
-                    <label for="register-province" class="block text-gray-700 text-sm font-semibold mb-2">Địa chỉ nhận hàng</label>
-                    <input type="text" id="register-province" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-transparent transition duration-200 text-gray-900">
-                </div>
-                <p id="register-error-message" class="text-red-500 text-sm mb-4 hidden"></p>
-                <button id="register-submit-btn" class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-lg shadow-md transition duration-300 transform hover:scale-105 active:scale-95">
-                    Đăng ký
-                </button>
-                <p class="mt-4 text-gray-600">Đã có tài khoản? <a href="#" id="show-login-form-link" class="text-blue-600 hover:underline">Đăng nhập</a></p>
-            </div>
-
-            <div id="forgot-password-form" class="hidden">
-                <div class="mb-4 text-left">
-                    <label for="forgot-password-email" class="block text-gray-700 text-sm font-semibold mb-2">Email của bạn</label>
-                    <input type="email" id="forgot-password-email" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-transparent transition duration-200 text-gray-900">
-                </div>
-                <p id="forgot-password-message" class="text-red-500 text-sm mb-4 hidden"></p>
-                <button id="send-reset-password-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg shadow-md transition duration-300 transform hover:scale-105 active:scale-95">
-                    Gửi liên kết đặt lại mật khẩu (Nếu không nhận được mail vui lòng kiểm tra thư rác)
-                </button>
-                <p class="mt-4 text-gray-600"><a href="#" id="back-to-login-link" class="text-blue-600 hover:underline">Quay lại Đăng nhập</a></p>
-            </div>
-        </div>
-    </div>
-
-    <div id="profile-modal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 p-4">
-        <div class="bg-white rounded-xl shadow-2xl p-8 max-w-md w-full text-center relative modal-content max-h-[80vh] overflow-y-auto">
-            <button id="close-profile-modal" class="absolute top-4 right-4 text-gray-600 hover:text-gray-800 text-3xl font-bold">&times;</button>
-            <h3 class="text-2xl font-bold text-gray-800 mb-6">Hồ sơ của bạn</h3>
-            <div class="mb-4 text-left">
-                <label for="profile-username" class="block text-gray-700 text-sm font-semibold mb-2">Tên đăng nhập (Email)</label>
-                <input type="text" id="profile-username" class="w-full p-3 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed text-gray-900" readonly>
-            </div>
-            <div class="mb-4 text-left">
-                <label for="profile-fullname" class="block text-gray-700 text-sm font-semibold mb-2">Họ và tên</label>
-                <input type="text" id="profile-fullname" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-transparent transition duration-200 text-gray-900">
-            </div>
-            <div class="mb-4 text-left">
-                <label for="profile-phone" class="block text-gray-700 text-sm font-semibold mb-2">Số điện thoại liên hệ</label>
-                <input type="tel" id="profile-phone" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-transparent transition duration-200 text-gray-900">
-            </div>
-            <div class="mb-6 text-left">
-                <label for="profile-province" class="block text-gray-700 text-sm font-semibold mb-2">Địa chỉ nhận hàng</label>
-                <input type="text" id="profile-province" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-transparent transition duration-200 text-gray-900">
-            </div>
-            <p id="profile-error-message" class="text-red-500 text-sm mb-4 hidden"></p>
-            <button id="save-profile-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg shadow-md transition duration-300 transform hover:scale-105 active:scale-95">
-                Lưu thay đổi
-            </button>
-            <button id="change-password-btn" class="mt-4 w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 px-6 rounded-lg shadow-md transition duration-300 transform hover:scale-105 active:scale-95">
-                Thay đổi mật khẩu
-            </button>
-            <button id="close-profile-modal-btn" class="mt-4 w-full bg-gray-400 hover:bg-gray-500 text-white font-semibold py-3 px-6 rounded-lg transition duration-300 transform hover:scale-105 active:scale-95">
-                Đóng
-            </button>
-        </div>
-    </div>
-
-    <div id="change-password-modal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 p-4">
-        <div class="bg-white rounded-xl shadow-2xl p-8 max-w-md w-full text-center relative modal-content">
-            <button id="close-change-password-modal" class="absolute top-4 right-4 text-gray-600 hover:text-gray-800 text-3xl font-bold">&times;</button>
-            <h3 class="text-2xl font-bold text-gray-800 mb-6">Thay đổi mật khẩu</h3>
-            <div class="mb-4 text-left">
-                <label for="current-password" class="block text-gray-700 text-sm font-semibold mb-2">Mật khẩu hiện tại</label>
-                <input type="password" id="current-password" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-transparent transition duration-200 text-gray-900">
-            </div>
-            <div class="mb-4 text-left">
-                <label for="new-password" class="block text-gray-700 text-sm font-semibold mb-2">Mật khẩu mới</label>
-                <input type="password" id="new-password" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-transparent transition duration-200 text-gray-900">
-            </div>
-            <div class="mb-6 text-left">
-                <label for="confirm-new-password" class="block text-gray-700 text-sm font-semibold mb-2">Xác nhận mật khẩu mới</label>
-                <input type="password" id="confirm-new-password" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-transparent transition duration-200 text-gray-900">
-            </div>
-            <p id="change-password-error-message" class="text-red-500 text-sm mb-4 hidden"></p>
-            <button id="submit-change-password-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg shadow-md transition duration-300 transform hover:scale-105 active:scale-95">
-                Xác nhận thay đổi
-            </button>
-        </div>
-    </div>
-
-    <!-- Container for notifications -->
-    <div id="notifications-container" class="fixed top-4 right-4 z-[9999] flex flex-col gap-4"></div>
-
-    <!-- Footer section -->
-    <footer class="bg-gray-800 text-gray-300 py-8 mt-auto">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <div>
-                    <h4 class="text-lg font-semibold text-white mb-4">Về chúng tôi</h4>
-                    <p class="text-sm">HHmobile.com là cửa hàng điện thoại di động uy tín, chuyên cung cấp các sản phẩm chính hãng với giá cả cạnh tranh và dịch vụ hậu mãi tuyệt vời.</p>
-                </div>
-                <div>
-                    <h4 class="text-lg font-semibold text-white mb-4">Liên hệ</h4>
-                    <ul class="text-sm space-y-2">
-                        <li><i class="fas fa-map-marker-alt mr-2"></i>Địa chỉ: Hà Nội</li>
-                        <li><i class="fab fa-tiktok mr-2"></i>TikTok : HHmobile</li>
-                        <li><i class="fas fa-envelope mr-2"></i>Email: hhmobile.adm@gmail.com</li>
-                    </ul>
-                </div>
-                <div>
-                    <h4 class="text-lg font-semibold text-white mb-4">Theo dõi chúng tôi</h4>
-                    <div class="flex space-x-4">
-                        <a href="#" class="text-gray-300 hover:text-white transition-colors duration-200"><i class="fab fa-facebook-f text-xl"></i></a>
-                        <a href="#" class="text-gray-300 hover:text-white transition-colors duration-200"><i class="fab fa-twitter text-xl"></i></a>
-                        <a href="#" class="text-gray-300 hover:text-white transition-colors duration-200"><i class="fab fa-instagram text-xl"></i></a>
-                        <a href="#" class="text-gray-300 hover:text-white transition-colors duration-200"><i class="fab fa-youtube text-xl"></i></a>
-                    </div>
-                </div>
-            </div>
-            <div class="border-t border-gray-700 mt-8 pt-6 text-center text-sm">
-                <p>&copy; 2024 HHmibile.com. All rights reserved.</p>
-            </div>
-        </div>
-    </footer>
-        <!-- Link to external JavaScript file -->
-    <script type="module" src="./script.js"></script>
+    <script>
+        // Lấy tham chiếu đến canvas và context 2D
+        const canvas = document.getElementById('dino-canvas');
+        const ctx = canvas.getContext('2d');
+        const restartButton = document.getElementById('restart-button');
+
+        // Kích thước game cố định (sẽ scale theo CSS)
+        const GAME_WIDTH = 700; // Tăng chiều rộng khung game
+        const GAME_HEIGHT = 150;
+
+        // Cập nhật kích thước canvas thực tế để nội dung không bị mờ
+        canvas.width = GAME_WIDTH;
+        canvas.height = GAME_HEIGHT;
+
+        // Trạng thái game
+        let isRunning = false;
+        let score = 0;
+        let highScore = localStorage.getItem('dinoHighScore') ? parseInt(localStorage.getItem('dinoHighScore')) : 0;
+        let gameOver = false;
+        let gameSpeed = 3; // Giảm tốc độ ban đầu
+        let frame = 0; // Để tính toán thời gian và tần suất xuất hiện vật cản
+
+        // Đối tượng Doraemon (thay đổi kích thước để phù hợp với hình vẽ)
+        const dino = {
+            x: 20,
+            y: GAME_HEIGHT - 35, // Đặt Doraemon trên mặt đất
+            width: 30, // Chiều rộng của vùng va chạm
+            height: 35, // Chiều cao của vùng va chạm
+            dy: 0, // Vận tốc nhảy
+            gravity: 0.5, // Lực hút
+            jumpPower: -10, // Lực đẩy khi nhảy
+            isJumping: false,
+            groundY: GAME_HEIGHT - 35 // Vị trí mặt đất của Doraemon
+        };
+
+        // Mảng chứa các vật cản (robot chuột)
+        let cacti = [];
+        const cactusMinGap = 150; // Khoảng cách tối thiểu giữa các robot chuột (tăng để phù hợp với chiều rộng mới)
+        const cactusMaxGap = 400; // Khoảng cách tối đa (tăng để phù hợp với chiều rộng mới)
+        let nextCactusDistance = 0; // Khoảng cách đến robot chuột tiếp theo
+
+        // Hàm vẽ Doraemon
+        function drawDino() {
+            // Vị trí tâm của Doraemon để vẽ dễ hơn
+            const centerX = dino.x + dino.width / 2;
+            const centerY = dino.y + dino.height / 2;
+
+            // Đầu và thân Doraemon
+            ctx.fillStyle = '#1e90ff'; // Màu xanh dương
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, 15, 0, Math.PI * 2); // Hình tròn thân
+            ctx.fill();
+
+            // Mặt trắng
+            ctx.fillStyle = 'white';
+            ctx.beginPath();
+            ctx.arc(centerX, centerY - 2, 12, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Mắt
+            ctx.fillStyle = 'black';
+            ctx.beginPath();
+            ctx.arc(centerX - 5, centerY - 7, 2, 0, Math.PI * 2);
+            ctx.arc(centerX + 5, centerY - 7, 2, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Mũi đỏ
+            ctx.fillStyle = 'red';
+            ctx.beginPath();
+            ctx.arc(centerX, centerY - 2, 3, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Râu (đơn giản hóa)
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 0.5;
+            ctx.beginPath();
+            ctx.moveTo(centerX - 10, centerY); ctx.lineTo(centerX + 10, centerY);
+            ctx.moveTo(centerX - 10, centerY - 3); ctx.lineTo(centerX + 10, centerY - 3);
+            ctx.moveTo(centerX - 10, centerY + 3); ctx.lineTo(centerX + 10, centerY + 3);
+            ctx.stroke();
+
+            // Miệng
+            ctx.strokeStyle = 'red';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.arc(centerX, centerY + 5, 8, 0, Math.PI); // Nụ cười
+            ctx.stroke();
+
+            // Cổ áo và chuông (đơn giản)
+            ctx.fillStyle = 'red';
+            ctx.fillRect(centerX - 10, centerY + 12, 20, 3); // Cổ áo
+            ctx.fillStyle = 'yellow';
+            ctx.beginPath();
+            ctx.arc(centerX, centerY + 16, 3, 0, Math.PI * 2); // Chuông
+            ctx.fill();
+        }
+
+        // Hàm vẽ Robot Chuột
+        function drawCactus(cactus) {
+            ctx.fillStyle = '#A9A9A9'; // Màu xám của robot
+            
+            // Thân chuột
+            ctx.fillRect(cactus.x, cactus.y, cactus.width, cactus.height);
+
+            // Tai
+            ctx.beginPath();
+            ctx.arc(cactus.x + 5, cactus.y, 5, 0, Math.PI * 2); // Tai trái
+            ctx.arc(cactus.x + cactus.width - 5, cactus.y, 5, 0, Math.PI * 2); // Tai phải
+            ctx.fill();
+
+            // Mắt robot (ví dụ: chấm đỏ)
+            ctx.fillStyle = 'red';
+            ctx.beginPath();
+            ctx.arc(cactus.x + cactus.width / 2 - 4, cactus.y + 5, 2, 0, Math.PI * 2);
+            ctx.arc(cactus.x + cactus.width / 2 + 4, cactus.y + 5, 2, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Đuôi (một đường thẳng)
+            ctx.strokeStyle = '#A9A9A9';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(cactus.x + cactus.width, cactus.y + cactus.height / 2);
+            ctx.lineTo(cactus.x + cactus.width + 8, cactus.y + cactus.height / 2 - 5);
+            ctx.stroke();
+        }
+
+        // Hàm cập nhật trạng thái Doraemon
+        function updateDino() {
+            if (dino.isJumping) {
+                dino.dy += dino.gravity; // Áp dụng trọng lực
+                dino.y += dino.dy; // Cập nhật vị trí Y
+
+                // Nếu Doraemon chạm đất
+                if (dino.y >= dino.groundY) {
+                    dino.y = dino.groundY;
+                    dino.isJumping = false;
+                    dino.dy = 0;
+                }
+            }
+        }
+
+        // Hàm tạo vật cản mới (giờ là robot chuột)
+        function createCactus() {
+            const minWidth = 20; // Chiều rộng tối thiểu của robot chuột
+            const maxWidth = 30; // Chiều rộng tối đa
+            const minHeight = 20; // Chiều cao tối thiểu
+            const maxHeight = 30; // Chiều cao tối đa
+
+            const width = minWidth + Math.random() * (maxWidth - minWidth);
+            const height = minHeight + Math.random() * (maxHeight - minHeight);
+            const x = GAME_WIDTH + width; // Bắt đầu ngoài màn hình bên phải
+            const y = GAME_HEIGHT - height; // Đặt trên mặt đất
+
+            cacti.push({ x, y, width, height });
+            // Tính toán khoảng cách đến robot chuột tiếp theo
+            nextCactusDistance = cactusMinGap + Math.random() * (cactusMaxGap - cactusMinGap);
+        }
+
+        // Hàm cập nhật trạng thái các vật cản (robot chuột)
+        function updateCacti() {
+            // Di chuyển robot chuột
+            for (let i = 0; i < cacti.length; i++) {
+                cacti[i].x -= gameSpeed;
+            }
+
+            // Xóa robot chuột đã đi qua màn hình
+            cacti = cacti.filter(cactus => cactus.x + cactus.width > 0);
+
+            // Thêm robot chuột mới nếu cần
+            frame++;
+            if (frame >= nextCactusDistance / gameSpeed) { // Điều chỉnh tần suất xuất hiện theo tốc độ game
+                createCactus();
+                frame = 0;
+            }
+        }
+
+        // Hàm kiểm tra va chạm
+        function checkCollision() {
+            for (let i = 0; i < cacti.length; i++) {
+                const c = cacti[i];
+
+                // Kiểm tra va chạm AABB (Axis-Aligned Bounding Box)
+                if (dino.x < c.x + c.width &&
+                    dino.x + dino.width > c.x &&
+                    dino.y < c.y + c.height &&
+                    dino.y + dino.height > c.y) {
+                    return true; // Va chạm xảy ra
+                }
+            }
+            return false; // Không va chạm
+        }
+
+        // Hàm vẽ điểm số
+        function drawScore() {
+            ctx.fillStyle = '#555';
+            ctx.font = '16px "Inter", sans-serif';
+            ctx.textAlign = 'right';
+            ctx.fillText('Điểm: ' + score.toFixed(0), GAME_WIDTH - 10, 20); // Làm tròn điểm
+            ctx.fillText('Cao nhất: ' + highScore, GAME_WIDTH - 10, 40);
+        }
+
+        // Hàm hiển thị thông báo "Game Over"
+        function drawGameOver() {
+            ctx.fillStyle = '#555';
+            ctx.font = '24px "Inter", sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('GAME OVER', GAME_WIDTH / 2, GAME_HEIGHT / 2 - 10);
+            ctx.font = '16px "Inter", sans-serif';
+            ctx.fillText('Nhấn để chơi lại', GAME_WIDTH / 2, GAME_HEIGHT / 2 + 20);
+            restartButton.classList.remove('hidden'); // Hiển thị nút chơi lại
+        }
+
+        // Hàm nhảy cho Doraemon
+        function jump() {
+            if (!isRunning && !gameOver) { // Nếu game chưa chạy và chưa game over
+                isRunning = true; // Bắt đầu game
+                gameLoop(); // Bắt đầu vòng lặp game thực sự
+            }
+
+            if (!dino.isJumping && !gameOver) {
+                dino.dy = dino.jumpPower;
+                dino.isJumping = true;
+            } else if (gameOver) {
+                resetGame(); // Nếu game over, nhấn để chơi lại
+            }
+        }
+
+        // Xử lý sự kiện nhấn phím (dùng cho máy tính)
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space' || e.key === ' ') {
+                jump();
+            }
+        });
+
+        // Xử lý sự kiện click/touch trên canvas (dùng cho cả máy tính và điện thoại)
+        canvas.addEventListener('mousedown', jump);
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault(); // Ngăn chặn cuộn trang trên di động khi chạm vào canvas
+            jump();
+        });
+        restartButton.addEventListener('click', resetGame);
+
+        // Hàm khởi động/chạy lại game
+        function resetGame() {
+            score = 0;
+            gameSpeed = 3; // Đặt lại tốc độ ban đầu khi chơi lại
+            gameOver = false;
+            dino.y = dino.groundY;
+            dino.dy = 0;
+            dino.isJumping = false;
+            cacti = []; // Xóa tất cả robot chuột
+            frame = 0;
+            isRunning = true; // Đảm bảo isRunning là true khi chơi lại
+            restartButton.classList.add('hidden'); // Ẩn nút chơi lại
+            gameLoop(); // Bắt đầu lại vòng lặp game
+        }
+
+        // Vòng lặp chính của trò chơi
+        function gameLoop() {
+            if (!isRunning && !gameOver) {
+                // Hiển thị thông báo hướng dẫn khi game chưa chạy lần đầu
+                ctx.clearRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+                ctx.fillStyle = '#555';
+                ctx.font = '20px "Inter", sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('Chạm/Nhấn để chơi', GAME_WIDTH / 2, GAME_HEIGHT / 2);
+                requestAnimationFrame(gameLoop); // Tiếp tục gọi để hiển thị thông báo
+                return;
+            }
+
+            if (gameOver) {
+                drawGameOver();
+                return;
+            }
+
+            // Xóa canvas
+            ctx.clearRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+
+            // Cập nhật và vẽ Doraemon
+            updateDino();
+            drawDino();
+
+            // Cập nhật và vẽ robot chuột
+            updateCacti();
+            cacti.forEach(drawCactus);
+
+            // Cập nhật điểm và tốc độ
+            score += 0.1; // Tăng điểm liên tục
+            if (score > highScore) {
+                highScore = Math.floor(score);
+                localStorage.setItem('dinoHighScore', highScore); // Lưu điểm cao nhất
+            }
+            if (Math.floor(score) % 100 === 0 && Math.floor(score) > 0) {
+                gameSpeed += 0.05; // Tăng nhẹ tốc độ sau mỗi 100 điểm
+            }
+            drawScore();
+
+            // Kiểm tra va chạm
+            if (checkCollision()) {
+                gameOver = true;
+            }
+
+            // Tiếp tục vòng lặp
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Bắt đầu vòng lặp game khi trang được tải
+        window.onload = gameLoop;
+    </script>
 </body>
 </html>
-

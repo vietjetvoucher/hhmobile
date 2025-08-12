@@ -5,13 +5,13 @@ import { getFirestore, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc, onSnap
 // Global variables for Firebase configuration, provided by the Canvas environment.
 const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
-      apiKey: "AIzaSyCVXKIfGbr6hgQZ4QULRux4clXOqOpl8uQ",
-      authDomain: "hhmobile-2c49b.firebaseapp.com",
-      projectId: "hhmobile-2c49b",
-      storageBucket: "hhmobile-2c49b.firebasestorage.app",
-      messagingSenderId: "835670139306",
-      appId: "1:835670139306:web:fe78dd9fda7629d9218bd3",
-      measurementId: "G-X1M2WWMGMY"
+        apiKey: "AIzaSyBPjpG1V3HpR4wCFEXth1byWN0q9-9jWiM",
+        authDomain: "hhmobile-df259.firebaseapp.com",
+        projectId: "hhmobile-df259",
+        storageBucket: "hhmobile-df259.firebaseapp.com",
+        messagingSenderId: "273294651647",
+        appId: "1:273294651647:web:02bcd7be6f760cd6849cca",
+        measurementId: "G-YSJ062B717"
 };
 const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
@@ -36,7 +36,7 @@ let shopDataCache = {
     name: 'HHmobile.com.vn', // Default name
     address: 'Chưa cập nhật',
     backgroundImg: '',
-    adminEmail: 'hhmobile.adm@gmail.com'
+    adminEmail: 'hhmobile.admin@gmail.com'
 };
 let userOrdersCache = [];
 let userCartCache = [];
@@ -1751,7 +1751,7 @@ async function renderOrders(status) {
                                 <button class="add-warranty-btn bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-4 rounded-lg transition-all duration-200" data-order-id="${order.id}">Mua gói bảo hành</button>
                             ` : ''}
                             ${status === 'shipping' ? `
-                                <button class="track-order-btn bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg transition-all duration-200" data-order-id="${order.id}">Theo dõi đơn hàng</button>
+                                <button class="track-order-btn bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg transition-all duration-200" data-order-id="${order.id}">Khoảng cách</button>
                             ` : ''}
                             ${status === 'delivered' ? `
                                 <button class="return-exchange-btn bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg transition-all duration-200" data-order-id="${order.id}">Đổi/Trả</button>
@@ -1960,11 +1960,13 @@ async function updateOrderStatus(orderId, customerUserId, actionType) {
             today.setDate(today.getDate() + 5); // 5 days from approval
             updates.estimatedDeliveryDate = today.toISOString().split('T')[0];
             updates.status = newStatus;
+            updates.orderLocation = 'Đang trên đường giao';
             // Mark VAT payment as paid upon admin approval for shipping
             updates.vatPaymentStatus = 'paid';
         } else if (actionType === 'approve_shipping' && newStatus === 'shipping') {
             newStatus = 'delivered';
             updates.status = newStatus;
+            updates.orderLocation = 'Đã giao thành công'; // Thêm dòng này
         } else {
             console.warn(`Invalid actionType or status mismatch: actionType=${actionType}, currentStatus=${newStatus}`);
             showNotification('Hành động không hợp lệ cho trạng thái đơn hàng hiện tại.', 'error');
@@ -3234,13 +3236,36 @@ function displayOrderTrackingModal(order) {
         trackingProductDetails.appendChild(itemDiv);
     });
 
-    trackingCurrentLocation.textContent = order.orderLocation || 'Đang cập nhật...';
+    // Determine current location for display
+    let displayCurrentLocation = 'Đang cập nhật...';
+    let mapOriginLocation = DEFAULT_WAREHOUSE_ADDRESS; // Default to shop's warehouse
+
+    if (order.status === 'delivered') {
+        displayCurrentLocation = 'Đã giao thành công';
+        mapOriginLocation = order.customerAddress; // If delivered, origin can be customer's address for historical tracking or "source" for return
+    } else if (order.orderLocation && order.orderLocation !== 'Đang cập nhật...') {
+        displayCurrentLocation = order.orderLocation;
+        // If orderLocation is a specific, non-default value, use it as map origin
+        if (order.orderLocation !== 'Đang trên đường giao') { // If it's not "Đang trên đường giao", it's a specific location
+            mapOriginLocation = order.orderLocation;
+        } else { // If it is "Đang trên đường giao", use default warehouse
+             mapOriginLocation = DEFAULT_WAREHOUSE_ADDRESS;
+        }
+    } else if (shopDataCache.address && shopDataCache.address !== 'Chưa cập nhật') {
+        // If orderLocation is not specific, but shop address is, use shop address for display
+        displayCurrentLocation = `Xuất phát từ cửa hàng: ${shopDataCache.address}`;
+        mapOriginLocation = shopDataCache.address; // Use shop address as origin for map
+    }
+
+    trackingCurrentLocation.textContent = displayCurrentLocation;
+
     trackingDestination.textContent = order.customerAddress || 'N/A';
 
     checkRouteBtn.onclick = () => {
-        const origin = encodeURIComponent(order.orderLocation || DEFAULT_WAREHOUSE_ADDRESS);
-        const destination = encodeURIComponent(order.customerAddress);
-        const googleMapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}`;
+        // Encode origin and destination for URL
+        const encodedOrigin = encodeURIComponent(mapOriginLocation);
+        const encodedDestination = encodeURIComponent(order.customerAddress);
+        const googleMapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${encodedOrigin}&destination=${encodedDestination}`;
         window.open(googleMapsUrl, '_blank');
     };
 

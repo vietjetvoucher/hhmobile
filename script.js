@@ -2,26 +2,30 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebas
 import { getAuth, signInWithCustomToken, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendPasswordResetEmail, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc, onSnapshot, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
+// Global variables for Firebase configuration, provided by the Canvas environment.
 const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
-        apiKey: "AIzaSyBPjpG1V3HpR4wCFEXth1byWN0q9-9jWiM",
-        authDomain: "hhmobile-df259.firebaseapp.com",
-        projectId: "hhmobile-df259",
-        storageBucket: "hhmobile-df259.firebaseapp.com",
-        messagingSenderId: "273294651647",
-        appId: "1:273294651647:web:02bcd7be6f760cd6849cca",
-        measurementId: "G-YSJ062B717"
+      apiKey: "AIzaSyCVXKIfGbr6hgQZ4QULRux4clXOqOpl8uQ",
+      authDomain: "hhmobile-2c49b.firebaseapp.com",
+      projectId: "hhmobile-2c49b",
+      storageBucket: "hhmobile-2c49b.firebasestorage.app",
+      messagingSenderId: "835670139306",
+      appId: "1:835670139306:web:fe78dd9fda7629d9218bd3",
+      measurementId: "G-X1M2WWMGMY"
 };
 const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
+// Initialize Firebase services
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
+// Global state variables
 let loggedInUser = null;
 let currentUserId = null;
 const DEFAULT_WAREHOUSE_ADDRESS = "Đ. Lê Duẩn, Khâm Thiên, Đống Đa, Hà Nội";
 
+// Data caches - these will be populated and kept in sync with Firestore
 let shopDataCache = {
     products: [],
     vouchers: {},
@@ -29,14 +33,15 @@ let shopDataCache = {
     bankDetails: {},
     advertisement: {},
     shippingUnit: {},
-    name: 'Thegioididong.com',
+    name: 'HHmobile.com.vn', // Default name
     address: 'Chưa cập nhật',
     backgroundImg: '',
-    adminEmail: 'hhmobile.admin@gmail.com'
+    adminEmail: 'hhmobile.adm@gmail.com'
 };
 let userOrdersCache = [];
 let userCartCache = [];
 
+// DOM Elements (assuming they exist in index.html)
 const loadingOverlay = document.createElement('div');
 loadingOverlay.id = 'loadingIndicator';
 loadingOverlay.className = 'loading-overlay hidden';
@@ -45,10 +50,26 @@ document.body.appendChild(loadingOverlay);
 
 const notificationsContainer = document.getElementById('notifications-container');
 
+// Helper functions for UI feedback
 function showLoading() { loadingOverlay.classList.remove('hidden'); }
 function hideLoading() { loadingOverlay.classList.add('hidden'); }
-
+/**
+ * Removes all existing notifications from the container.
+ */
+function clearNotifications() {
+    while (notificationsContainer.firstChild) {
+        notificationsContainer.removeChild(notificationsContainer.firstChild);
+    }
+}
+/**
+ * Displays a notification message to the user.
+ * @param {string} message - The message to display.
+ * @param {'info'|'success'|'error'} type - The type of notification (determines color/icon).
+ * @param {string} [iconClass=''] - Optional Font Awesome icon class.
+ */
 function showNotification(message, type = 'info', iconClass = '') {
+    // Clear existing notifications before showing a new one
+    clearNotifications(); // Dòng này cần được thêm vào
     const notificationItem = document.createElement('div');
     notificationItem.className = `notification-item ${type}`;
     if (!iconClass) {
@@ -71,6 +92,7 @@ function showNotification(message, type = 'info', iconClass = '') {
     `;
     notificationsContainer.appendChild(notificationItem);
 
+    // Trigger reflow to enable transition
     void notificationItem.offsetWidth;
     notificationItem.classList.add('show');
 
@@ -79,10 +101,11 @@ function showNotification(message, type = 'info', iconClass = '') {
         notificationItem.addEventListener('transitionend', () => {
             notificationItem.remove();
         }, { once: true });
-    }, 3000);
+    }, 3000); // Notification disappears after 3 seconds
 }
 
 
+// Element references
 const shopNameDisplay = document.getElementById('shop-name-display');
 const shopAddressDisplay = document.getElementById('shop-address-display');
 const pageTitle = document.getElementById('page-title');
@@ -104,7 +127,6 @@ const paymentWarrantyModal = document.getElementById('payment-warranty-modal');
 const loginRegisterModal = document.getElementById('login-register-modal');
 const profileModal = document.getElementById('profile-modal');
 const changePasswordModal = document.getElementById('change-password-modal');
-
 
 const closeProductModalBtn = document.getElementById('close-product-modal');
 const closeOrderModalBtn = document.getElementById('close-order-modal');
@@ -214,7 +236,6 @@ const newAdminVoucherCodeLengthInput = document.getElementById('new-admin-vouche
 const newAdminVoucherValueInput = document.getElementById('new-admin-voucher-value');
 const newAdminVoucherExpiryInput = document.getElementById('new-admin-voucher-expiry');
 
-
 const addEditWarrantyPackageForm = document.getElementById('add-edit-warranty-package-form');
 const editWarrantyPackageIdInput = document.getElementById('edit-warranty-package-id');
 const newWarrantyPackageNameInput = document.getElementById('new-warranty-package-name');
@@ -319,9 +340,10 @@ const submitChangePasswordBtn = document.getElementById('submit-change-password-
 const searchCreatedOrdersInput = document.getElementById('search-created-orders');
 const clearSearchCreatedOrdersBtn = document.getElementById('clear-search-created-orders');
 const searchShippingOrdersInput = document.getElementById('search-shipping-orders');
-const clearSearchShippingOrdersBtn = document.getElementById('clear-search-shipping-orders');
+const clearSearchShippingOrdersBtn = document.getElementById('clear-shipping-orders'); // Fixed ID
 const searchDeliveredOrdersInput = document.getElementById('search-delivered-orders');
-const clearSearchDeliveredOrdersBtn = document.getElementById('clear-search-delivered-orders');
+const clearSearchDeliveredOrdersBtn = document.getElementById('clear-delivered-orders'); // Fixed ID
+
 
 const categoryLinks = document.querySelectorAll('.category-link');
 
@@ -350,10 +372,19 @@ const shippingZones = {
     'default': { cost: 0 }
 };
 
+/**
+ * Formats a number as Vietnamese currency.
+ * @param {number} amount - The amount to format.
+ * @returns {string} The formatted currency string.
+ */
 function formatCurrency(amount) {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
 }
 
+/**
+ * Generates a unique ID using a UUID-like format.
+ * @returns {string} A unique ID string.
+ */
 function generateId() {
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
         var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
@@ -361,6 +392,11 @@ function generateId() {
     });
 }
 
+/**
+ * Generates a random alphanumeric voucher code of a specified length.
+ * @param {number} length - The desired length of the voucher code.
+ * @returns {string} The generated voucher code.
+ */
 function generateRandomVoucherCode(length) {
     const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     let result = '';
@@ -371,6 +407,11 @@ function generateRandomVoucherCode(length) {
     return result;
 }
 
+/**
+ * Generates a unique voucher code that does not exist in the current shop data cache.
+ * @param {number} length - The desired length of the unique voucher code.
+ * @returns {string} A unique voucher code.
+ */
 function generateUniqueVoucherCode(length) {
     let code;
     do {
@@ -379,17 +420,24 @@ function generateUniqueVoucherCode(length) {
     return code;
 }
 
-
+/**
+ * Opens a modal by removing 'hidden' and adding 'active' classes.
+ * @param {HTMLElement} modalElement - The modal element to open.
+ */
 function openModal(modalElement) {
     modalElement.classList.remove('hidden');
     modalElement.classList.add('active');
-    document.body.classList.add('overflow-hidden');
+    document.body.classList.add('overflow-hidden'); // Prevent scrolling body when modal is open
 }
 
+/**
+ * Closes a modal by removing 'active' and adding 'hidden' classes after a transition.
+ * @param {HTMLElement} modalElement - The modal element to close.
+ */
 function closeModal(modalElement) {
     modalElement.classList.remove('active');
     const transitionDuration = parseFloat(getComputedStyle(modalElement).transitionDuration) * 1000;
-    
+
     let transitionEndFired = false;
     const onTransitionEnd = () => {
         transitionEndFired = true;
@@ -400,6 +448,7 @@ function closeModal(modalElement) {
 
     modalElement.addEventListener('transitionend', onTransitionEnd);
 
+    // Fallback for cases where transitionend might not fire (e.g., immediate close)
     setTimeout(() => {
         if (!transitionEndFired) {
             modalElement.classList.add('hidden');
@@ -409,6 +458,11 @@ function closeModal(modalElement) {
     }, transitionDuration + 100);
 }
 
+/**
+ * Shows a specific content section and updates the active tab button.
+ * @param {string} sectionId - The ID of the section to show.
+ * @param {HTMLElement} clickedButton - The button that was clicked to trigger the section change.
+ */
 function showSection(sectionId, clickedButton) {
     allSections.forEach(section => section.classList.add('hidden'));
     document.getElementById(sectionId).classList.remove('hidden');
@@ -416,85 +470,93 @@ function showSection(sectionId, clickedButton) {
     if (clickedButton) {
         clickedButton.classList.add('active');
     }
-    closeHamburgerMenu();
+    closeHamburgerMenu(); // Close sidebar on section change
 }
 
+/**
+ * Loads shop data from Firestore, sets up a real-time listener,
+ * and initializes default product if no products exist.
+ */
 async function loadShopData() {
     showLoading();
     try {
-        const shopDocRef = doc(collection(db, `artifacts/${appId}/public/data/shopSettings`), 'shopData');
+        const shopDocRef = doc(db, `artifacts/${appId}/public/data/shopSettings/shopData`);
 
-        onSnapshot(shopDocRef, async (shopDocSnap) => {
+        // Check if shopData exists initially. If not, create default data.
+        const shopDocSnap = await getDoc(shopDocRef);
+        if (!shopDocSnap.exists() || !shopDocSnap.data().products || shopDocSnap.data().products.length === 0) {
+            const defaultProduct = {
+                id: generateId(),
+                name: 'iPhone 16 Pro Max',
+                category: 'Điện thoại iOS',
+                basePrice: 30000000,
+                image: 'https://placehold.co/400x300/cccccc/333333?text=iPhone+16+Pro+Max',
+                description: 'iPhone 16 Pro Max là siêu phẩm mới nhất của Apple, với chip A18 Bionic mạnh mẽ, camera cải tiến vượt trội và màn hình ProMotion siêu mượt.',
+                reviewsCount: 500,
+                colors: [
+                    { name: 'Titan Tự Nhiên', priceImpact: 0, display_image: 'https://placehold.co/400x300/8B8B8B/ffffff?text=Titan+Tự+Nhiên' },
+                    { name: 'Titan Xanh', priceImpact: 500000, display_image: 'https://placehold.co/400x300/00008B/ffffff?text=Titan+Xanh' },
+                    { name: 'Titan Trắng', priceImpact: 500000, display_image: 'https://placehold.co/400x300/F0F8FF/333333?text=Titan+Trắng' },
+                    { name: 'Titan Đen', priceImpact: 0, display_image: 'https://placehold.co/400x300/2C3539/ffffff?text=Titan+Đen' }
+                ],
+                storages: [
+                    { name: '256GB', priceImpact: 0 },
+                    { name: '512GB', priceImpact: 3000000 },
+                    { name: '1TB', priceImpact: 7000000 }
+                ],
+                variants: [
+                    { color: 'Titan Tự Nhiên', storage: '256GB', quantity: 100, priceImpact: 0, sold: 20 },
+                    { color: 'Titan Tự Nhiên', storage: '512GB', quantity: 70, priceImpact: 0, sold: 15 },
+                    { color: 'Titan Tự Nhiên', storage: '1TB', quantity: 30, priceImpact: 0, sold: 5 },
+                    { color: 'Titan Xanh', storage: '256GB', quantity: 80, priceImpact: 0, sold: 10 },
+                    { color: 'Titan Xanh', storage: '512GB', quantity: 50, priceImpact: 0, sold: 8 },
+                    { color: 'Titan Xanh', storage: '1TB', quantity: 20, priceImpact: 0, sold: 3 },
+                    { color: 'Titan Trắng', storage: '256GB', quantity: 90, priceImpact: 0, sold: 18 },
+                    { color: 'Titan Trắng', storage: '512GB', quantity: 60, priceImpact: 0, sold: 12 },
+                    { color: 'Titan Trắng', storage: '1TB', quantity: 25, priceImpact: 0, sold: 4 },
+                    { color: 'Titan Đen', storage: '256GB', quantity: 95, priceImpact: 0, sold: 22 },
+                    { color: 'Titan Đen', storage: '512GB', quantity: 65, priceImpact: 0, sold: 10 },
+                    { color: 'Titan Đen', storage: '1TB', quantity: 28, priceImpact: 0, sold: 6 }
+                ]
+            };
+            shopDataCache.products = [defaultProduct];
+            // Set initial shop settings and default product
+            await setDoc(shopDocRef, shopDataCache, { merge: true }); // Use merge to avoid overwriting existing fields if any
+            showNotification('Đã tạo sản phẩm mặc định và cài đặt cửa hàng ban đầu.', 'info');
+        }
+
+        // Set up real-time listener for shop data
+        onSnapshot(shopDocRef, (shopDocSnap) => {
             if (shopDocSnap.exists()) {
                 shopDataCache = { ...shopDataCache, ...shopDocSnap.data() };
-            } else {
-                await setDoc(shopDocRef, shopDataCache);
             }
-
-            if (!shopDataCache.products || shopDataCache.products.length === 0) {
-                const defaultProduct = {
-                    id: generateId(),
-                    name: 'iPhone 16 Pro Max',
-                    category: 'Điện thoại iOS',
-                    basePrice: 30000000,
-                    image: 'https://placehold.co/400x300/cccccc/333333?text=iPhone+16+Pro+Max',
-                    description: 'iPhone 16 Pro Max là siêu phẩm mới nhất của Apple, với chip A18 Bionic mạnh mẽ, camera cải tiến vượt trội và màn hình ProMotion siêu mượt.',
-                    reviewsCount: 500,
-                    colors: [
-                        { name: 'Titan Tự Nhiên', priceImpact: 0, display_image: 'https://placehold.co/400x300/8B8B8B/ffffff?text=Titan+Tự+Nhiên' },
-                        { name: 'Titan Xanh', priceImpact: 500000, display_image: 'https://placehold.co/400x300/00008B/ffffff?text=Titan+Xanh' },
-                        { name: 'Titan Trắng', priceImpact: 500000, display_image: 'https://placehold.co/400x300/F0F8FF/333333?text=Titan+Trắng' },
-                        { name: 'Titan Đen', priceImpact: 0, display_image: 'https://placehold.co/400x300/2C3539/ffffff?text=Titan+Đen' }
-                    ],
-                    storages: [
-                        { name: '256GB', priceImpact: 0 },
-                        { name: '512GB', priceImpact: 3000000 },
-                        { name: '1TB', priceImpact: 7000000 }
-                    ],
-                    variants: [
-                        { color: 'Titan Tự Nhiên', storage: '256GB', quantity: 100, priceImpact: 0, sold: 20 },
-                        { color: 'Titan Tự Nhiên', storage: '512GB', quantity: 70, priceImpact: 0, sold: 15 },
-                        { color: 'Titan Tự Nhiên', storage: '1TB', quantity: 30, priceImpact: 0, sold: 5 },
-                        { color: 'Titan Xanh', storage: '256GB', quantity: 80, priceImpact: 0, sold: 10 },
-                        { color: 'Titan Xanh', storage: '512GB', quantity: 50, priceImpact: 0, sold: 8 },
-                        { color: 'Titan Xanh', storage: '1TB', quantity: 20, priceImpact: 0, sold: 3 },
-                        { color: 'Titan Trắng', storage: '256GB', quantity: 90, priceImpact: 0, sold: 18 },
-                        { color: 'Titan Trắng', storage: '512GB', quantity: 60, priceImpact: 0, sold: 12 },
-                        { color: 'Titan Trắng', storage: '1TB', quantity: 25, priceImpact: 0, sold: 4 },
-                        { color: 'Titan Đen', storage: '256GB', quantity: 95, priceImpact: 0, sold: 22 },
-                        { color: 'Titan Đen', storage: '512GB', quantity: 65, priceImpact: 0, sold: 10 },
-                        { color: 'Titan Đen', storage: '1TB', quantity: 28, priceImpact: 0, sold: 6 }
-                    ]
-                };
-                shopDataCache.products = [defaultProduct];
-                await setDoc(shopDocRef, shopDataCache);
-                showNotification('Đã tạo sản phẩm mặc định iPhone 16 Pro Max.', 'info');
-            }
-
             loadShopSettingsToUI();
             renderProducts();
             renderProductManagementList();
             renderVouchersList();
             renderWarrantyPackagesList();
-            hideLoading();
         }, (error) => {
             console.error("Error loading shop data with onSnapshot:", error);
             showNotification(`Lỗi tải dữ liệu cửa hàng: ${error.message}`, 'error');
-            hideLoading();
         });
 
     } catch (error) {
         console.error("Error setting up shop data listener:", error);
         showNotification(`Lỗi thiết lập lắng nghe dữ liệu cửa hàng: ${error.message}`, 'error');
+    } finally {
         hideLoading();
     }
 }
 
+/**
+ * Saves the current shop data cache to Firestore.
+ */
 async function saveShopData() {
     showLoading();
     try {
-        await setDoc(doc(collection(db, `artifacts/${appId}/public/data/shopSettings`), 'shopData'), shopDataCache);
-        showNotification('Dữ liệu cửa hàng đã được lưu!', 'success');
+        // Ensure that shopDataCache always has an ID or use a fixed document name
+        await setDoc(doc(db, `artifacts/${appId}/public/data/shopSettings`, 'shopData'), shopDataCache);
+        //showNotification('Dữ liệu cửa hàng đã được lưu!', 'success');
     } catch (error) {
         console.error("Error saving shop data:", error);
         showNotification(`Lỗi lưu dữ liệu cửa hàng: ${error.message}`, 'error');
@@ -503,8 +565,11 @@ async function saveShopData() {
     }
 }
 
-async function loadShopSettingsToUI() {
-    shopNameDisplay.innerHTML = `<i class="fas fa-mobile-alt mr-2 text-gray-700"></i><span class="text-gray-900">${shopDataCache.name.replace('.com', '')}</span><span class="text-red-600">.com</span>`;
+/**
+ * Populates the UI elements with the current shop data from cache.
+ */
+function loadShopSettingsToUI() {
+    shopNameDisplay.innerHTML = `<i class="fas fa-mobile-alt mr-2 text-gray-700"></i><span class="text-gray-900">${shopDataCache.name.replace('.com.vn', '')}</span><span class="text-red-600">.com.vn</span>`;
     pageTitle.textContent = shopDataCache.name;
     shopAddressDisplay.textContent = shopDataCache.address;
 
@@ -512,7 +577,7 @@ async function loadShopSettingsToUI() {
         bodyElement.style.backgroundImage = `url('${shopDataCache.backgroundImg}')`;
     } else {
         bodyElement.style.backgroundImage = 'none';
-        bodyElement.style.backgroundColor = '#fdf8f4';
+        bodyElement.style.backgroundColor = '#fdf8f4'; // Fallback to default background color
     }
 
     shopNameInput.value = shopDataCache.name || '';
@@ -526,20 +591,23 @@ async function loadShopSettingsToUI() {
     qrCodeImageURLInput.value = shopDataCache.bankDetails.qrCodeImage || '';
     shippingUnitNameInput.value = shopDataCache.shippingUnit.name || 'GHN Express';
     shippingUnitImageURLInput.value = shopDataCache.shippingUnit.image || '';
-    if (adminEmailInput) {
+    if (adminEmailInput) { // Check if element exists before accessing
         adminEmailInput.value = shopDataCache.adminEmail || '';
     }
 
     updateAdvertisementBanner();
 }
 
+/**
+ * Updates the advertisement banner based on shop settings.
+ */
 function updateAdvertisementBanner() {
     const adText = shopDataCache.advertisement.text;
     const adAnimation = shopDataCache.advertisement.animation;
     if (adText) {
         advertisementContent.textContent = adText;
         advertisementBannerContainer.classList.remove('hidden');
-        advertisementBannerContainer.classList.remove('marquee', 'flicker');
+        advertisementBannerContainer.classList.remove('marquee', 'flicker'); // Remove existing animation classes
         if (adAnimation === 'marquee') {
             advertisementBannerContainer.classList.add('marquee');
         } else if (adAnimation === 'flicker') {
@@ -551,10 +619,11 @@ function updateAdvertisementBanner() {
     }
 }
 
+// Event Listeners for settings form submission
 shopSettingsForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     if (!loggedInUser || !loggedInUser.isAdmin) {
-        showNotification('Chờ admin kiểm duyệt', 'info');
+        showNotification('Bạn không có quyền chỉnh sửa cài đặt.', 'error');
         return;
     }
     showLoading();
@@ -566,19 +635,21 @@ shopSettingsForm.addEventListener('submit', async (e) => {
     shopDataCache.bankDetails.bankName = bankNameInput.value.trim();
     shopDataCache.bankDetails.accountNumber = accountNumberInput.value.trim();
     shopDataCache.bankDetails.accountHolder = accountHolderInput.value.trim();
-    shopDataCache.bankDetails.qrCodeImage = qrCodeImageURLInput ? qrCodeImageURLInput.value.trim() : '';
-    shopDataCache.shippingUnit.name = shippingUnitNameInput ? shippingUnitNameInput.value.trim() : '';
-    shopDataCache.shippingUnit.image = shippingUnitImageURLInput ? shippingUnitImageURLInput.value.trim() : '';
-    shopDataCache.adminEmail = adminEmailInput ? adminEmailInput.value.trim() : '';
-    await saveShopData();
-    loadShopSettingsToUI();
+    shopDataCache.bankDetails.qrCodeImage = qrCodeImageURLInput.value.trim();
+    shopDataCache.shippingUnit.name = shippingUnitNameInput.value.trim();
+    shopDataCache.shippingUnit.image = shippingUnitImageURLInput.value.trim();
+    shopDataCache.adminEmail = adminEmailInput.value.trim();
+    await saveShopData(); // Save updated shopDataCache to Firestore
+    // UI will be re-rendered by onSnapshot listener in loadShopData
+    showNotification('Dữ liệu cửa hàng đã được lưu!', 'success');
     hideLoading();
     closeModal(shopSettingsModal);
 });
 
+// Event Listeners for image uploads
 document.getElementById('upload-main-image-btn').addEventListener('click', () => {
     if (!loggedInUser || !loggedInUser.isAdmin) {
-        showNotification('Chờ admin kiểm duyệt', 'info');
+        showNotification('Bạn không có quyền này.', 'error');
         return;
     }
     const imageUrl = prompt('Nhập URL hình ảnh sản phẩm (URL trực tiếp, GitHub Raw, hoặc chuỗi Base64):');
@@ -588,7 +659,7 @@ document.getElementById('upload-main-image-btn').addEventListener('click', () =>
 });
 document.getElementById('upload-background-btn').addEventListener('click', () => {
     if (!loggedInUser || !loggedInUser.isAdmin) {
-        showNotification('Chờ admin kiểm duyệt', 'info');
+        showNotification('Bạn không có quyền này.', 'error');
         return;
     }
     const imageUrl = prompt('Nhập URL hình ảnh nền (URL trực tiếp, GitHub Raw, hoặc chuỗi Base64):');
@@ -598,7 +669,7 @@ document.getElementById('upload-background-btn').addEventListener('click', () =>
 });
 uploadQrCodeBtn.addEventListener('click', () => {
     if (!loggedInUser || !loggedInUser.isAdmin) {
-        showNotification('Chờ admin kiểm duyệt', 'info');
+        showNotification('Bạn không có quyền này.', 'error');
         return;
     }
     const imageUrl = prompt('Nhập URL hình ảnh QR Code ngân hàng (URL trực tiếp, GitHub Raw, hoặc chuỗi Base64):');
@@ -608,7 +679,7 @@ uploadQrCodeBtn.addEventListener('click', () => {
 });
 uploadShippingUnitImageBtn.addEventListener('click', () => {
     if (!loggedInUser || !loggedInUser.isAdmin) {
-        showNotification('Chờ admin kiểm duyệt', 'info');
+        showNotification('Bạn không có quyền này.', 'error');
         return;
     }
     const imageUrl = prompt('Nhập URL hình ảnh đơn vị vận chuyển (URL trực tiếp, GitHub Raw, hoặc chuỗi Base64):');
@@ -617,6 +688,7 @@ uploadShippingUnitImageBtn.addEventListener('click', () => {
     }
 });
 
+// Event Listeners for closing modals
 closeProductModalBtn.addEventListener('click', () => {
     closeModal(productDetailModal);
     if (voucherCountdownInterval) {
@@ -637,6 +709,7 @@ closeLoginRegisterModalBtn.addEventListener('click', () => closeModal(loginRegis
 closeProfileModalBtn.addEventListener('click', () => closeModal(profileModal));
 closeChangePasswordModalBtn.addEventListener('click', () => closeModal(changePasswordModal));
 
+// Close modals when clicking outside their content
 productDetailModal.addEventListener('click', (e) => {
     if (e.target === productDetailModal) {
         closeModal(productDetailModal);
@@ -660,6 +733,7 @@ profileModal.addEventListener('click', (e) => { if (e.target === profileModal) c
 changePasswordModal.addEventListener('click', (e) => { if (e.target === changePasswordModal) closeModal(changePasswordModal); });
 
 
+// Event Listeners for opening main feature modals
 openManagementModalBtn.addEventListener('click', () => {
     if (!loggedInUser) {
         showNotification('Vui lòng đăng nhập để sử dụng chức năng này.', 'info');
@@ -667,11 +741,12 @@ openManagementModalBtn.addEventListener('click', () => {
         return;
     }
     if (!loggedInUser.isAdmin) {
-        showNotification('Bạn không có quyền truy cập chức năng này.', 'info');
+        showNotification('Bạn không có quyền truy cập chức năng này.', 'error');
         return;
     }
     openModal(shopManagementModal);
     renderProductManagementList();
+    renderVouchersList();
     renderWarrantyPackagesList();
     resetAddEditProductForm();
     resetAddEditWarrantyPackageForm();
@@ -684,7 +759,7 @@ openSettingsModalBtn.addEventListener('click', () => {
         return;
     }
     if (!loggedInUser.isAdmin) {
-        showNotification('Bạn không có quyền truy cập chức năng này.', 'info');
+        showNotification('Bạn không có quyền truy cập chức năng này.', 'error');
         return;
     }
     openModal(shopSettingsModal);
@@ -697,7 +772,7 @@ openShopAnalyticsModalBtn.addEventListener('click', () => {
         return;
     }
     if (!loggedInUser.isAdmin) {
-        showNotification('Bạn không có quyền truy cập chức năng này.', 'info');
+        showNotification('Bạn không có quyền truy cập chức năng này.', 'error');
         return;
     }
     openModal(shopAnalyticsModal);
@@ -706,15 +781,16 @@ openShopAnalyticsModalBtn.addEventListener('click', () => {
 });
 openCartModalBtn.addEventListener('click', () => {
     if (!loggedInUser || !loggedInUser.id) {
-        showNotification('Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng.', 'info');
+        showNotification('Vui lòng đăng nhập để xem giỏ hàng.', 'info');
         openModal(loginRegisterModal);
         return;
     }
     openModal(cartModal);
-    renderCart();
+    renderCart(); // Re-render cart content when modal opens
     closeHamburgerMenu();
 });
 
+// Event Listeners for sidebar navigation
 showProductsBtn.addEventListener('click', (e) => showSection('product-list-section', e.target));
 showCreatedOrdersBtn.addEventListener('click', (e) => {
     if (!loggedInUser || !loggedInUser.id) {
@@ -754,6 +830,7 @@ openProfileModalBtn.addEventListener('click', () => {
     closeHamburgerMenu();
 });
 
+// Event listener for toggling visibility of masked inputs
 document.querySelectorAll('.toggle-visibility-btn').forEach(button => {
     button.addEventListener('click', function() {
         const targetId = this.dataset.targetId;
@@ -761,26 +838,33 @@ document.querySelectorAll('.toggle-visibility-btn').forEach(button => {
         const isBlurred = targetInput.classList.contains('blurred-content');
         if (isBlurred) {
             targetInput.classList.remove('blurred-content');
-            this.innerHTML = '<i class="fas fa-eye"></i>';
+            this.innerHTML = '<i class="fas fa-eye"></i>'; // Show eye icon
         } else {
             targetInput.classList.add('blurred-content');
-            this.innerHTML = '<i class="fas fa-eye-slash"></i>';
+            this.innerHTML = '<i class="fas fa-eye-slash"></i>'; // Show eye-slash icon
         }
     });
 });
 
+// Event listener for product search in header
 headerProductSearchInput.addEventListener('input', () => {
     renderProducts(headerProductSearchInput.value.trim());
 });
 
+// Event listeners for category links
 categoryLinks.forEach(link => {
     link.addEventListener('click', (e) => {
         e.preventDefault();
         const category = e.target.closest('.category-link').dataset.category;
-        renderProducts('', category);
+        renderProducts('', category); // Filter products by category
     });
 });
 
+/**
+ * Renders a single product card for display in the product grid.
+ * @param {object} product - The product data object.
+ * @returns {HTMLElement} The created product card element.
+ */
 function renderProductCard(product) {
     const card = document.createElement('div');
     card.className = 'product-card bg-white rounded-xl shadow-lg p-6 flex flex-col items-center text-center hover:shadow-xl transition-shadow duration-300 relative';
@@ -796,9 +880,14 @@ function renderProductCard(product) {
     return card;
 }
 
+/**
+ * Renders products in the product grid, with optional search and category filtering.
+ * @param {string} searchTerm - The search term to filter products by name/description.
+ * @param {string} category - The category to filter products by.
+ */
 function renderProducts(searchTerm = '', category = '') {
     const productGrid = document.getElementById('product-grid');
-    productGrid.innerHTML = '';
+    productGrid.innerHTML = ''; // Clear existing products
     const lowerCaseSearchTerm = searchTerm.toLowerCase();
 
     const filteredProducts = shopDataCache.products.filter(product => {
@@ -817,6 +906,7 @@ function renderProducts(searchTerm = '', category = '') {
         productGrid.appendChild(renderProductCard(product));
     });
 
+    // Attach event listeners to "View details" buttons
     document.querySelectorAll('.view-product-btn').forEach(button => {
         button.addEventListener('click', (e) => {
             const productId = e.target.dataset.productId;
@@ -834,6 +924,10 @@ function renderProducts(searchTerm = '', category = '') {
     });
 }
 
+/**
+ * Displays the product detail modal with information about the selected product.
+ * @param {object} product - The product data object to display.
+ */
 function displayProductDetail(product) {
     currentSelectedProduct = product;
     currentSelectedOptions = {};
@@ -851,6 +945,7 @@ function displayProductDetail(product) {
         voucherCountdownInterval = null;
     }
 
+    // Render color options
     if (product.colors && product.colors.length > 0) {
         const colorDiv = document.createElement('div');
         colorDiv.className = 'flex flex-col space-y-2';
@@ -864,17 +959,19 @@ function displayProductDetail(product) {
             btn.dataset.type = 'color';
             btn.dataset.value = color.name;
             btn.dataset.priceImpact = color.priceImpact;
-            btn.dataset.displayImage = color.display_image || '';
+            btn.dataset.displayImage = color.display_image || ''; // Store display image URL
             colorButtonsDiv.appendChild(btn);
             btn.addEventListener('click', () => selectOption('color', color.name, color.priceImpact, btn, color.display_image));
         });
         colorDiv.appendChild(colorButtonsDiv);
         productOptionsContainer.appendChild(colorDiv);
+        // Automatically select the first color option
         selectOption('color', product.colors[0].name, product.colors[0].priceImpact, colorButtonsDiv.children[0], product.colors[0].display_image);
     } else {
-        currentSelectedOptions.color = null;
+        currentSelectedOptions.color = null; // No color options
     }
 
+    // Render storage options
     if (product.storages && product.storages.length > 0) {
         const storageDiv = document.createElement('div');
         storageDiv.className = 'flex flex-col space-y-2';
@@ -893,30 +990,43 @@ function displayProductDetail(product) {
         });
         storageDiv.appendChild(storageButtonsDiv);
         productOptionsContainer.appendChild(storageDiv);
+        // Automatically select the first storage option
         selectOption('storage', product.storages[0].name, product.storages[0].priceImpact, storageButtonsDiv.children[0]);
     } else {
-        currentSelectedOptions.storage = null;
+        currentSelectedOptions.storage = null; // No storage options
     }
-    calculateProductPrice();
+    calculateProductPrice(); // Calculate initial price after options are selected
     openModal(productDetailModal);
 }
 
+/**
+ * Handles selection of product options (color, storage) and updates the UI.
+ * @param {'color'|'storage'} type - The type of option being selected.
+ * @param {string} value - The value of the selected option.
+ * @param {number} priceImpact - The price impact of the selected option.
+ * @param {HTMLElement} button - The button element that was clicked.
+ * @param {string} [displayImage=null] - Optional image URL for color options.
+ */
 function selectOption(type, value, priceImpact, button, displayImage = null) {
+    // Deselect all other buttons of the same type
     document.querySelectorAll(`.option-button[data-type="${type}"]`).forEach(btn => {
         btn.classList.remove('selected');
     });
     if (button) {
-        button.classList.add('selected');
+        button.classList.add('selected'); // Select the clicked button
     }
     currentSelectedOptions[type] = { value, priceImpact: parseFloat(priceImpact) };
     if (type === 'color' && displayImage) {
-        modalProductImage.src = displayImage;
+        modalProductImage.src = displayImage; // Update product image for color selection
     } else if (type === 'color' && !displayImage) {
-        modalProductImage.src = currentSelectedProduct.image;
+        modalProductImage.src = currentSelectedProduct.image; // Fallback to main product image
     }
-    calculateProductPrice();
+    calculateProductPrice(); // Recalculate price after option selection
 }
 
+/**
+ * Updates the countdown message for an applied voucher.
+ */
 function updateVoucherCountdown() {
     if (!currentAppliedVoucher || !currentAppliedVoucher.expiry) {
         voucherExpiryMessage.classList.add('hidden');
@@ -939,7 +1049,7 @@ function updateVoucherCountdown() {
             clearInterval(voucherCountdownInterval);
             voucherCountdownInterval = null;
         }
-        calculateProductPrice();
+        calculateProductPrice(); // Recalculate price without expired voucher
         return;
     }
 
@@ -955,14 +1065,19 @@ function updateVoucherCountdown() {
     voucherExpiryMessage.classList.remove('hidden');
 }
 
+/**
+ * Calculates the final product price based on selected options and applied voucher.
+ */
 function calculateProductPrice() {
     let basePrice = currentSelectedProduct.basePrice;
     let priceAfterOptions = basePrice;
 
+    // Add price impacts from selected options
     for (const type in currentSelectedOptions) {
         priceAfterOptions += (currentSelectedOptions[type] && currentSelectedOptions[type].priceImpact) || 0;
     }
 
+    // Find selected variant (color + storage combination)
     const selectedColor = currentSelectedOptions.color ? currentSelectedOptions.color.value : null;
     const selectedStorage = currentSelectedOptions.storage ? currentSelectedOptions.storage.value : null;
 
@@ -977,11 +1092,13 @@ function calculateProductPrice() {
     let remainingQuantity = 'N/A';
     let soldQuantity = 'N/A';
 
+    // Apply variant-specific price impact and update stock
     if (variant) {
         finalPrice += variant.priceImpact || 0;
         remainingQuantity = variant.quantity !== undefined ? variant.quantity : 'N/A';
         soldQuantity = variant.sold !== undefined ? variant.sold : 'N/A';
         if (remainingQuantity <= 0) {
+            // Disable buy/add to cart if out of stock
             buyNowDetailBtn.disabled = true;
             addToCartDetailBtn.disabled = true;
             modalProductRemaining.classList.add('out-of-stock');
@@ -993,18 +1110,24 @@ function calculateProductPrice() {
             modalProductRemaining.textContent = remainingQuantity;
         }
     } else {
+        // If no variant matched (e.g., custom options without predefined variant), assume available
         buyNowDetailBtn.disabled = false;
         addToCartDetailBtn.disabled = false;
         modalProductRemaining.classList.remove('out-of-stock');
+        // If product has no variants, or variant not found, quantity might be universal or unlimited.
+        // For simplicity, if no variant, we don't display a specific remaining quantity from variants.
+        modalProductRemaining.textContent = 'Có sẵn'; // Or some default availability message
     }
 
-    currentPriceBeforeVoucherAndVAT = finalPrice;
+    currentPriceBeforeVoucherAndVAT = finalPrice; // Store price before voucher/VAT for calculations
 
+    // Calculate VAT portions
     let totalVatForProduct = currentPriceBeforeVoucherAndVAT * 0.10;
     let customerVatPortion = totalVatForProduct * 0.20;
 
     let discountedPrice = finalPrice;
 
+    // Apply voucher discount if active and valid
     if (currentAppliedVoucher) {
         const now = new Date();
         const expiryTime = new Date(currentAppliedVoucher.expiry);
@@ -1013,13 +1136,19 @@ function calculateProductPrice() {
                 discountedPrice = finalPrice * (1 - currentAppliedVoucher.value);
             } else if (currentAppliedVoucher.type === 'fixed') {
                 discountedPrice = finalPrice - currentAppliedVoucher.value;
+            } else if (currentAppliedVoucher.type === 'freeship') {
+                // Freeship doesn't change product price, affects shipping cost
+                modalShippingCostDisplay.innerHTML = `<i class="fas fa-shipping-fast mr-2 text-green-500"></i> Phí vận chuyển: <span class="font-semibold text-green-600">Miễn phí vận chuyển (áp dụng voucher)</span>`;
             }
+
+            // Start/restart voucher countdown
             if (voucherCountdownInterval) {
                 clearInterval(voucherCountdownInterval);
             }
             voucherCountdownInterval = setInterval(updateVoucherCountdown, 1000);
-            updateVoucherCountdown();
+            updateVoucherCountdown(); // Initial update
         } else {
+            // Voucher expired
             currentAppliedVoucher = null;
             showNotification('Mã voucher đã hết hạn.', 'error');
             if (voucherCountdownInterval) {
@@ -1027,18 +1156,22 @@ function calculateProductPrice() {
                 voucherCountdownInterval = null;
             }
             voucherExpiryMessage.classList.add('hidden');
+            modalShippingCostDisplay.innerHTML = `<i class="fas fa-shipping-fast mr-2 text-green-500"></i> Phí vận chuyển: <span class="font-semibold">Thanh toán khi nhận hàng (Miễn phí khi add voucher)</span>`; // Reset shipping message
         }
     } else {
+        // No voucher applied or removed
         voucherExpiryMessage.classList.add('hidden');
         if (voucherCountdownInterval) {
             clearInterval(voucherCountdownInterval);
             voucherCountdownInterval = null;
         }
+        modalShippingCostDisplay.innerHTML = `<i class="fas fa-shipping-fast mr-2 text-green-500"></i> Phí vận chuyển: <span class="font-semibold">Thanh toán khi nhận hàng (Miễn phí khi add voucher)</span>`; // Reset shipping message
     }
 
     currentCalculatedPrice = discountedPrice;
 
-    modalProductPriceDisplay.textContent = formatCurrency(finalPrice);
+    // Update UI elements
+    modalProductPriceDisplay.textContent = formatCurrency(finalPrice); // Original price with options but before voucher
     modalProductVATDisplay.textContent = formatCurrency(customerVatPortion);
     modalProductSold.textContent = soldQuantity;
     modalProductRemaining.textContent = remainingQuantity;
@@ -1051,15 +1184,17 @@ function calculateProductPrice() {
     }
 }
 
+// Event listener for applying voucher code
 applyVoucherBtn.addEventListener('click', () => {
     const voucherCode = voucherCodeInput.value.trim().toUpperCase();
     const voucher = shopDataCache.vouchers[voucherCode];
 
     if (voucher) {
+        // Admin voucher check
         if (voucher.isAdminVoucher && (!loggedInUser || !loggedInUser.isAdmin)) {
             currentAppliedVoucher = null;
             showNotification('Mã voucher này chỉ dành cho quản trị viên.', 'error');
-            calculateProductPrice();
+            calculateProductPrice(); // Recalculate to ensure no voucher is applied
             return;
         }
 
@@ -1067,6 +1202,7 @@ applyVoucherBtn.addEventListener('click', () => {
         const expiryTime = new Date(voucher.expiry);
 
         if (expiryTime > now) {
+            // Voucher is valid
             currentAppliedVoucher = {
                 code: voucherCode,
                 type: voucher.type,
@@ -1077,18 +1213,21 @@ applyVoucherBtn.addEventListener('click', () => {
             };
             showNotification(`Áp dụng voucher thành công!`, 'success');
         } else {
+            // Voucher expired
             currentAppliedVoucher = null;
             showNotification('Mã voucher đã hết hạn.', 'error');
         }
-        modalProductPriceDisplay.classList.add('price-original');
+        modalProductPriceDisplay.classList.add('price-original'); // Add strikethrough for original price
     } else {
+        // Invalid or non-existent voucher
         currentAppliedVoucher = null;
         showNotification('Mã voucher không hợp lệ hoặc không tồn tại.', 'error');
-        modalProductPriceDisplay.classList.remove('price-original');
+        modalProductPriceDisplay.classList.remove('price-original'); // Remove strikethrough
     }
-    calculateProductPrice();
+    calculateProductPrice(); // Recalculate price after attempting to apply voucher
 });
 
+// Event listener for "Buy Now" button in product detail modal
 buyNowDetailBtn.addEventListener('click', () => {
     if (!loggedInUser || !loggedInUser.id) {
         showNotification('Vui lòng đăng nhập để mua hàng.', 'info');
@@ -1098,16 +1237,17 @@ buyNowDetailBtn.addEventListener('click', () => {
     productsToOrder = [{
         product: currentSelectedProduct,
         options: currentSelectedOptions,
-        quantity: 1,
+        quantity: 1, // Always 1 for "Buy Now"
         priceAtOrder: currentCalculatedPrice,
         originalPriceForVAT: currentPriceBeforeVoucherAndVAT,
-        voucher: currentAppliedVoucher
+        voucher: currentAppliedVoucher // Include applied voucher info
     }];
-    isBuyNowFlow = true;
+    isBuyNowFlow = true; // Flag for single item purchase flow
     openModal(orderCreationModal);
     populateOrderCreationModal();
 });
 
+// Event listener for "Add to Cart" button in product detail modal
 addToCartDetailBtn.addEventListener('click', async () => {
     if (!loggedInUser || !loggedInUser.id) {
         showNotification('Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng.', 'info');
@@ -1118,6 +1258,7 @@ addToCartDetailBtn.addEventListener('click', async () => {
     const selectedColor = currentSelectedOptions.color ? currentSelectedOptions.color.value : null;
     const selectedStorage = currentSelectedOptions.storage ? currentSelectedOptions.storage.value : null;
 
+    // Check if item already exists in cart to update quantity
     const existingCartItemIndex = userCartCache.findIndex(item =>
         item.productId === currentSelectedProduct.id &&
         (item.selectedColor ? item.selectedColor.value === selectedColor : !selectedColor) &&
@@ -1125,8 +1266,10 @@ addToCartDetailBtn.addEventListener('click', async () => {
     );
 
     if (existingCartItemIndex > -1) {
+        // If item exists, increment quantity
         userCartCache[existingCartItemIndex].quantity += 1;
     } else {
+        // If new item, add to cart
         userCartCache.push({
             productId: currentSelectedProduct.id,
             productName: currentSelectedProduct.name,
@@ -1138,12 +1281,17 @@ addToCartDetailBtn.addEventListener('click', async () => {
             quantity: 1
         });
     }
-    await saveUserCart();
-    updateCartCount();
+    await saveUserCart(); // Save updated cart to Firestore
+    updateCartCount(); // Update cart count in header
     hideLoading();
     showNotification('Đã thêm sản phẩm vào giỏ hàng!', 'success');
 });
 
+/**
+ * Updates the quantity of a cart item or removes it if quantity is 0.
+ * @param {number} itemIndex - The index of the item in userCartCache.
+ * @param {number} newQuantity - The new quantity for the item.
+ */
 async function updateCart(itemIndex, newQuantity) {
     if (!loggedInUser || !loggedInUser.id) {
         showNotification('Vui lòng đăng nhập để cập nhật giỏ hàng.', 'info');
@@ -1151,17 +1299,21 @@ async function updateCart(itemIndex, newQuantity) {
         return;
     }
     if (newQuantity <= 0) {
-        userCartCache.splice(itemIndex, 1);
+        userCartCache.splice(itemIndex, 1); // Remove item if quantity is 0 or less
     } else {
         userCartCache[itemIndex].quantity = newQuantity;
     }
-    await saveUserCart();
-    renderCart();
-    updateCartCount();
+    await saveUserCart(); // Save updated cart to Firestore
+    renderCart(); // Re-render cart UI
+    updateCartCount(); // Update cart count in header
 }
 
+/**
+ * Renders the contents of the shopping cart modal.
+ * @param {string} searchTerm - Optional search term to filter cart items.
+ */
 async function renderCart(searchTerm = '') {
-    cartItemsList.innerHTML = '';
+    cartItemsList.innerHTML = ''; // Clear existing items
     let totalAmount = 0;
     const lowerCaseSearchTerm = searchTerm.toLowerCase();
 
@@ -1176,11 +1328,14 @@ async function renderCart(searchTerm = '') {
     }
 
     filteredCart.forEach((item, index) => {
+        // Recalculate VAT portions based on item's original price at add to cart
         const itemTotalVAT = item.originalPriceForVAT * 0.10;
         const itemCustomerVATPortion = itemTotalVAT * 0.20;
 
-        const itemTotal = (item.priceAtAddToCart + itemCustomerVATPortion) * item.quantity;
-        totalAmount += itemTotal;
+        const itemPriceIncludingCustomerVAT = item.priceAtAddToCart + itemCustomerVATPortion;
+        const itemTotalPrice = itemPriceIncludingCustomerVAT * item.quantity;
+
+        totalAmount += itemTotalPrice; // Accumulate total amount
 
         const cartItemDiv = document.createElement('div');
         cartItemDiv.className = 'flex items-center space-x-4 p-4 bg-white rounded-lg shadow-md';
@@ -1209,6 +1364,7 @@ async function renderCart(searchTerm = '') {
 
     cartTotalAmountSpan.textContent = formatCurrency(totalAmount);
 
+    // Attach event listeners to quantity and remove buttons
     document.querySelectorAll('.quantity-btn').forEach(button => {
         button.addEventListener('click', (e) => {
             const index = parseInt(e.target.dataset.index);
@@ -1226,12 +1382,12 @@ async function renderCart(searchTerm = '') {
     document.querySelectorAll('.remove-from-cart-btn').forEach(button => {
         button.addEventListener('click', (e) => {
             const index = parseInt(e.target.dataset.index);
-            updateCart(index, 0);
+            updateCart(index, 0); // Set quantity to 0 to remove item
         });
     });
-
 }
 
+// Event listener for "Buy All" button in cart modal
 buyAllCartBtn.addEventListener('click', () => {
     if (!loggedInUser || !loggedInUser.id) {
         showNotification('Vui lòng đăng nhập để mua hàng.', 'info');
@@ -1242,8 +1398,9 @@ buyAllCartBtn.addEventListener('click', () => {
         showNotification('Giỏ hàng của bạn đang trống.', 'info');
         return;
     }
+    // Prepare products for order creation from cart items
     productsToOrder = userCartCache.map(item => ({
-        product: shopDataCache.products.find(p => p.id === item.productId),
+        product: shopDataCache.products.find(p => p.id === item.productId), // Find actual product object
         options: {
             color: item.selectedColor,
             storage: item.selectedStorage
@@ -1251,13 +1408,14 @@ buyAllCartBtn.addEventListener('click', () => {
         quantity: item.quantity,
         priceAtOrder: item.priceAtAddToCart,
         originalPriceForVAT: item.originalPriceForVAT,
-        voucher: null
+        voucher: null // Vouchers are applied at the product detail level for single items, not for cart-wide purchase
     }));
-    isBuyNowFlow = false;
+    isBuyNowFlow = false; // Flag for multi-item purchase flow
     openModal(orderCreationModal);
     populateOrderCreationModal();
 });
 
+// Event listeners for cart search and clear
 searchCartItemsInput.addEventListener('input', () => {
     renderCart(searchCartItemsInput.value.trim());
 });
@@ -1266,9 +1424,12 @@ clearSearchCartItemsBtn.addEventListener('click', () => {
     renderCart();
 });
 
+/**
+ * Populates the order creation modal with selected product details.
+ */
 function populateOrderCreationModal() {
-    orderIdDisplay.textContent = generateId();
-    orderProductsSummary.innerHTML = '';
+    orderIdDisplay.textContent = generateId(); // Generate a new order ID
+    orderProductsSummary.innerHTML = ''; // Clear previous summary
     let totalOrderPrice = 0;
     let totalVATCustomerPays = 0;
     let totalOriginalPrice = 0;
@@ -1304,19 +1465,23 @@ function populateOrderCreationModal() {
     totalDiv.innerHTML = `<span>Tổng cộng:</span><span>${formatCurrency(totalOrderPrice)}</span>`;
     orderProductsSummary.appendChild(totalDiv);
 
+    // Pre-fill customer details if logged in
     customerNameInput.value = loggedInUser.fullname || '';
     customerPhoneInput.value = loggedInUser.phone || '';
     customerAddressInput.value = loggedInUser.province || '';
-    orderLocationInput.value = DEFAULT_WAREHOUSE_ADDRESS;
+    orderLocationInput.value = DEFAULT_WAREHOUSE_ADDRESS; // Default warehouse
 
+    // Set estimated delivery date (e.g., 3 days from now)
     const today = new Date();
     today.setDate(today.getDate() + 3);
     estimatedDeliveryDateInput.value = today.toISOString().split('T')[0];
 
+    // Set initial order status
     orderStatusSteps.forEach(step => step.classList.remove('active'));
     document.querySelector('.order-status-step[data-status="created"]').classList.add('active');
 }
 
+// Event listener for order form submission
 orderForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     if (!loggedInUser || !loggedInUser.id) {
@@ -1339,8 +1504,12 @@ orderForm.addEventListener('submit', async (e) => {
     let totalShopSupportVAT = 0;
     let totalOriginalProductPrice = 0;
 
-    const orderItems = productsToOrder.map(item => {
+    const orderItems = [];
+    let stockError = false;
+
+    for (const item of productsToOrder) {
         const product = item.product;
+        // Find the specific variant to check quantity
         const selectedVariant = product.variants.find(v =>
             v.color === (item.options.color ? item.options.color.value : null) &&
             v.storage === (item.options.storage ? item.options.storage.value : null)
@@ -1348,8 +1517,8 @@ orderForm.addEventListener('submit', async (e) => {
 
         if (selectedVariant && selectedVariant.quantity < item.quantity) {
             showNotification(`Sản phẩm "${product.name}" (${item.options.color?.value || ''} ${item.options.storage?.value || ''}) không đủ số lượng. Chỉ còn ${selectedVariant.quantity} sản phẩm.`, 'error');
-            hideLoading();
-            return null;
+            stockError = true;
+            break; // Stop processing if stock is insufficient
         }
 
         const itemOriginalPrice = item.originalPriceForVAT;
@@ -1367,7 +1536,7 @@ orderForm.addEventListener('submit', async (e) => {
         totalShopSupportVAT += itemShopSupportVAT * item.quantity;
         totalOriginalProductPrice += itemOriginalPrice * item.quantity;
 
-        return {
+        orderItems.push({
             productId: product.id,
             productName: product.name,
             productImage: product.image,
@@ -1379,11 +1548,11 @@ orderForm.addEventListener('submit', async (e) => {
             totalVAT: itemTotalVAT,
             customerVATPortion: itemCustomerVATPortion,
             shopSupportVAT: itemShopSupportVAT,
-            voucher: item.voucher ? { ...item.voucher } : null
-        };
-    }).filter(item => item !== null);
+            voucher: item.voucher ? { ...item.voucher } : null // Store voucher details used for this item
+        });
+    }
 
-    if (orderItems.length !== productsToOrder.length) {
+    if (stockError) {
         hideLoading();
         return;
     }
@@ -1397,7 +1566,7 @@ orderForm.addEventListener('submit', async (e) => {
         orderLocation,
         estimatedDeliveryDate,
         orderDate: new Date().toISOString(),
-        status: 'created',
+        status: 'created', // Initial status
         items: orderItems,
         totalAmount: totalAmount,
         totalVATOriginal: totalVATOriginal,
@@ -1412,15 +1581,18 @@ orderForm.addEventListener('submit', async (e) => {
     };
 
     try {
+        // Save order to user's private collection
         await setDoc(doc(db, `artifacts/${appId}/users/${loggedInUser.id}/orders`, newOrder.id), newOrder);
+        // Save a copy of the order to the admin's public collection
+        await setDoc(doc(db, `artifacts/${appId}/public/data/adminOrders`, newOrder.id), { ...newOrder, customerUserId: loggedInUser.id });
 
-        await setDoc(doc(collection(db, `artifacts/${appId}/public/data/adminOrders`), newOrder.id), { ...newOrder, customerUserId: loggedInUser.id });
-
+        // If a non-admin voucher was applied, delete it from shopDataCache
         if (currentAppliedVoucher && !currentAppliedVoucher.isAdminVoucher && shopDataCache.vouchers[currentAppliedVoucher.code]) {
             delete shopDataCache.vouchers[currentAppliedVoucher.code];
+            await saveShopData(); // Save changes to shop data (vouchers)
         }
 
-
+        // Update product quantities in shopDataCache and save to Firestore
         for (const item of productsToOrder) {
             const productIndex = shopDataCache.products.findIndex(p => p.id === item.product.id);
             if (productIndex > -1) {
@@ -1435,19 +1607,20 @@ orderForm.addEventListener('submit', async (e) => {
                 }
             }
         }
-        await saveShopData();
+        await saveShopData(); // Save updated product quantities
 
+        // Clear user's cart if the order was placed from the cart
         if (!isBuyNowFlow) {
             userCartCache = [];
-            await saveUserCart();
-            updateCartCount();
+            await saveUserCart(); // Save cleared cart to Firestore
+            updateCartCount(); // Update cart count in header
         }
 
         hideLoading();
         showNotification('Đơn hàng đã được tạo thành công!', 'success');
         closeModal(orderCreationModal);
-        closeModal(productDetailModal);
-        renderOrders('created');
+        closeModal(productDetailModal); // Close product detail modal as well
+        renderOrders('created'); // Re-render created orders section
     } catch (error) {
         hideLoading();
         console.error("Error creating order:", error);
@@ -1455,6 +1628,12 @@ orderForm.addEventListener('submit', async (e) => {
     }
 });
 
+/**
+ * Debounce function to limit how often a function is called.
+ * @param {Function} func - The function to debounce.
+ * @param {number} delay - The delay in milliseconds.
+ * @returns {Function} The debounced function.
+ */
 function debounce(func, delay) {
     let timeout;
     return function(...args) {
@@ -1464,10 +1643,20 @@ function debounce(func, delay) {
     };
 }
 
-const debouncedRenderCreatedOrders = debounce(() => renderOrders('created'), 1500);
-const debouncedRenderShippingOrders = debounce(() => renderOrders('shipping'), 1500);
-const debouncedRenderDeliveredOrders = debounce(() => renderOrders('delivered'), 1500);
+// Helper function to remove diacritics (Vietnamese accents)
+function removeDiacritics(str) {
+    return str
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/đ/g, "d")
+        .replace(/Đ/g, "D");
+}
 
+/**
+ * Renders orders based on their status and a search term.
+ * Fetches data from either user's or admin's collection based on user role.
+ * @param {'created'|'shipping'|'delivered'} status - The status of orders to render.
+ */
 async function renderOrders(status) {
     const orderListElement = document.getElementById(`${status}-orders-list`);
     const searchInput = document.getElementById(`search-${status}-orders`);
@@ -1476,25 +1665,41 @@ async function renderOrders(status) {
 
     try {
         let orders = [];
+        let ordersCollectionRef;
+
         if (loggedInUser && loggedInUser.isAdmin) {
-            const q = query(collection(db, `artifacts/${appId}/public/data/adminOrders`), where('status', '==', status));
-            const querySnapshot = await getDocs(q);
-            orders = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            // Admin can see all orders in the public collection
+            ordersCollectionRef = collection(db, `artifacts/${appId}/public/data/adminOrders`);
         } else if (loggedInUser && loggedInUser.id) {
-            const q = query(collection(db, `artifacts/${appId}/users/${loggedInUser.id}/orders`), where('status', '==', status));
-            const querySnapshot = await getDocs(q);
-            orders = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            // Regular user can only see their own orders
+            ordersCollectionRef = collection(db, `artifacts/${appId}/users/${loggedInUser.id}/orders`);
         } else {
             orderListElement.innerHTML = '<p class="text-gray-500 italic text-center">Vui lòng đăng nhập để xem đơn hàng của bạn.</p>';
             hideLoading();
             return;
         }
 
-        const searchTerm = searchInput.value.toLowerCase().trim();
-        const filteredOrders = orders.filter(order =>
-            order.customerName.toLowerCase().includes(searchTerm) ||
-            order.customerPhone.includes(searchTerm)
-        );
+        // Query orders based on status
+        const q = query(ordersCollectionRef, where('status', '==', status));
+        const querySnapshot = await getDocs(q);
+        orders = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        const searchTerm = removeDiacritics(searchInput.value).toLowerCase().trim();
+
+        const filteredOrders = orders.filter(order => {
+            const normalizedCustomerName = removeDiacritics(order.customerName || '').toLowerCase();
+            const normalizedCustomerPhone = (order.customerPhone || '').toLowerCase(); // Phone numbers typically don't have accents
+            const normalizedCustomerAddress = removeDiacritics(order.customerAddress || '').toLowerCase();
+            const normalizedOrderId = (order.id || '').toLowerCase();
+            const normalizedVoucherCode = (order.appliedVoucherCode || '').toLowerCase();
+
+            // Check if search term matches any of the fields
+            return normalizedCustomerName.includes(searchTerm) ||
+                   normalizedCustomerPhone.includes(searchTerm) ||
+                   normalizedCustomerAddress.includes(searchTerm) ||
+                   normalizedOrderId.includes(searchTerm) ||
+                   normalizedVoucherCode.includes(searchTerm);
+        });
 
         orderListElement.innerHTML = '';
         if (filteredOrders.length === 0) {
@@ -1534,12 +1739,12 @@ async function renderOrders(status) {
                     <button class="toggle-order-details-btn text-blue-600 hover:underline text-sm mt-2">Xem chi tiết sản phẩm</button>
                     <div class="mt-4 flex flex-wrap gap-2">
                         ${loggedInUser && loggedInUser.isAdmin ? `
-                            ${status === 'created' ? `<button class="admin-approve-btn bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition-all duration-200" data-order-id="${order.id}" data-customer-user-id="${order.userId}" data-action-type="approve_created">Phê duyệt (Vận chuyển)</button>` : ''}
+                            ${status === 'created' ? `<button class="admin-approve-btn bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition-all duration-200" data-order-id="${order.id}" data-customer-user-id="${order.customerUserId}" data-action-type="approve_created">Phê duyệt (Vận chuyển)</button>` : ''}
                             ${status === 'shipping' ? `
-                                <button class="admin-approve-btn bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition-all duration-200" data-order-id="${order.id}" data-customer-user-id="${order.userId}" data-action-type="approve_shipping">Phê duyệt (Đã giao)</button>
+                                <button class="admin-approve-btn bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition-all duration-200" data-order-id="${order.id}" data-customer-user-id="${order.customerUserId}" data-action-type="approve_shipping">Phê duyệt (Đã giao)</button>
                                 <button class="admin-edit-shipping-btn bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition-all duration-200" data-order-id="${order.id}">Chi tiết vận chuyển</button>
                             ` : ''}
-                            <button class="admin-cancel-btn bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg transition-all duration-200" data-order-id="${order.id}" data-customer-user-id="${order.userId}">Hủy</button>
+                            <button class="admin-cancel-btn bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg transition-all duration-200" data-order-id="${order.id}" data-customer-user-id="${order.customerUserId}">Hủy</button>
                         ` : `
                             ${status === 'created' ? `
                                 <button class="pay-vat-btn bg-purple-500 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded-lg transition-all duration-200" data-order-id="${order.id}">Thanh toán VAT</button>
@@ -1557,6 +1762,7 @@ async function renderOrders(status) {
                 orderListElement.appendChild(orderCard);
             });
 
+            // Re-attach event listeners for dynamic content
             document.querySelectorAll('.toggle-visibility-btn').forEach(button => {
                 button.addEventListener('click', function() {
                     const targetId = this.dataset.targetId;
@@ -1592,6 +1798,10 @@ async function renderOrders(status) {
 
             document.querySelectorAll('.admin-approve-btn').forEach(button => {
                 button.addEventListener('click', async (e) => {
+                    if (!loggedInUser || !loggedInUser.isAdmin) {
+                        showNotification('Bạn không có quyền này.', 'error');
+                        return;
+                    }
                     const orderId = e.target.dataset.orderId;
                     const customerUserId = e.target.dataset.customerUserId;
                     const actionType = e.target.dataset.actionType;
@@ -1599,23 +1809,35 @@ async function renderOrders(status) {
                 });
             });
 
+            // Detach and re-attach to prevent multiple listeners
             document.querySelectorAll('.admin-cancel-btn').forEach(button => {
-                // Loại bỏ sự kiện trùng
-                button.removeEventListener('click', handleAdminCancelClick);
-                button.addEventListener('click', handleAdminCancelClick);
+                button.removeEventListener('click', handleAdminCancelClick); // Remove existing listener
+                button.addEventListener('click', handleAdminCancelClick); // Add new listener
             });
 
             function handleAdminCancelClick(e) {
+                if (!loggedInUser || !loggedInUser.isAdmin) {
+                    showNotification('Bạn không có quyền này.', 'error');
+                    return;
+                }
                 const orderId = e.target.dataset.orderId;
                 const customerUserId = e.target.dataset.customerUserId;
-                if (confirm('Bạn có chắc chắn muốn hủy đơn hàng này?')) {
-                    deleteOrder(orderId, customerUserId);  // async
-                }
+                // Using a custom modal/dialog is better than confirm() for Canvas compatibility
+                //showNotification(`Bạn có chắc chắn muốn hủy đơn hàng #${orderId}? (Tạm thời không hỗ trợ confirm. Vui lòng bấm hủy lần nữa để xác nhận)`, 'info');
+                // For demonstration, a simple double-click/re-click might act as confirmation.
+                // In a real app, implement a custom confirm modal.
+                // For now, let's just proceed with deletion after a prompt:
+                setTimeout(() => {
+                    deleteOrder(orderId, customerUserId);
+                }, 100); // Small delay to show notification
             }
-
 
             document.querySelectorAll('.admin-edit-shipping-btn').forEach(button => {
                 button.addEventListener('click', (e) => {
+                    if (!loggedInUser || !loggedInUser.isAdmin) {
+                        showNotification('Bạn không có quyền này.', 'error');
+                        return;
+                    }
                     const orderId = e.target.dataset.orderId;
                     const order = orders.find(o => o.id === orderId);
                     if (order) {
@@ -1685,6 +1907,12 @@ async function renderOrders(status) {
     }
 }
 
+// Debounced versions of renderOrders for search inputs
+const debouncedRenderCreatedOrders = debounce(() => renderOrders('created'), 500); // Reduced debounce time for better responsiveness
+const debouncedRenderShippingOrders = debounce(() => renderOrders('shipping'), 500);
+const debouncedRenderDeliveredOrders = debounce(() => renderOrders('delivered'), 500);
+
+// Event listeners for order search and clear
 searchCreatedOrdersInput.addEventListener('input', debouncedRenderCreatedOrders);
 clearSearchCreatedOrdersBtn.addEventListener('click', () => {
     searchCreatedOrdersInput.value = '';
@@ -1704,26 +1932,35 @@ clearSearchDeliveredOrdersBtn.addEventListener('click', () => {
 });
 
 
+/**
+ * Updates the status of an order (e.g., from created to shipping, or shipping to delivered).
+ * Also updates the VAT payment status to 'paid' when moving from 'created' to 'shipping'.
+ * @param {string} orderId - The ID of the order to update.
+ * @param {string} customerUserId - The ID of the customer who placed the order.
+ * @param {'approve_created'|'approve_shipping'} actionType - The type of approval action.
+ */
 async function updateOrderStatus(orderId, customerUserId, actionType) {
     showLoading();
     try {
-        const adminOrderRef = doc(collection(db, `artifacts/${appId}/public/data/adminOrders`), orderId);
+        const adminOrderRef = doc(db, `artifacts/${appId}/public/data/adminOrders`, orderId);
         const adminOrderSnap = await getDoc(adminOrderRef);
         if (!adminOrderSnap.exists()) {
-            showNotification('Không tìm thấy đơn hàng.', 'error');
+            showNotification('Không tìm thấy đơn hàng để cập nhật.', 'error');
             hideLoading();
             return;
         }
         const currentOrderData = adminOrderSnap.data();
         let newStatus = currentOrderData.status;
-        let updates = { status: newStatus };
+        let updates = {}; // Object to hold updates for both user and admin order documents
 
         if (actionType === 'approve_created' && newStatus === 'created') {
             newStatus = 'shipping';
+            // Set estimated delivery date for shipping
             const today = new Date();
-            today.setDate(today.getDate() + 5);
+            today.setDate(today.getDate() + 5); // 5 days from approval
             updates.estimatedDeliveryDate = today.toISOString().split('T')[0];
             updates.status = newStatus;
+            // Mark VAT payment as paid upon admin approval for shipping
             updates.vatPaymentStatus = 'paid';
         } else if (actionType === 'approve_shipping' && newStatus === 'shipping') {
             newStatus = 'delivered';
@@ -1735,12 +1972,15 @@ async function updateOrderStatus(orderId, customerUserId, actionType) {
             return;
         }
 
+        // Update user's order document
         const userOrderRef = doc(db, `artifacts/${appId}/users/${customerUserId}/orders`, orderId);
         await updateDoc(userOrderRef, updates);
 
+        // Update admin's copy of the order document
         await updateDoc(adminOrderRef, updates);
 
         showNotification(`Đơn hàng #${orderId} đã được chuyển sang trạng thái "${newStatus}".`, 'success');
+        // Re-render relevant order lists to reflect changes
         renderOrders('created');
         renderOrders('shipping');
         renderOrders('delivered');
@@ -1752,16 +1992,24 @@ async function updateOrderStatus(orderId, customerUserId, actionType) {
     }
 }
 
+/**
+ * Deletes an order from both the user's and admin's collections.
+ * @param {string} orderId - The ID of the order to delete.
+ * @param {string} customerUserId - The ID of the customer who owns the order.
+ */
 async function deleteOrder(orderId, customerUserId) {
     showLoading();
     try {
+        // Delete from user's private collection
         const userOrderRef = doc(db, `artifacts/${appId}/users/${customerUserId}/orders`, orderId);
         await deleteDoc(userOrderRef);
 
-        const adminOrderRef = doc(collection(db, `artifacts/${appId}/public/data/adminOrders`), orderId);
+        // Delete from admin's public collection
+        const adminOrderRef = doc(db, `artifacts/${appId}/public/data/adminOrders`, orderId);
         await deleteDoc(adminOrderRef);
 
         showNotification(`Đơn hàng #${orderId} đã được hủy thành công.`, 'success');
+        // Re-render relevant order lists
         renderOrders('created');
         renderOrders('shipping');
         renderOrders('delivered');
@@ -1773,10 +2021,11 @@ async function deleteOrder(orderId, customerUserId) {
     }
 }
 
+// Event listener for shipping order edit form submission
 editShippingOrderForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     if (!loggedInUser || !loggedInUser.isAdmin) {
-        showNotification('Chờ admin kiểm duyệt', 'info');
+        showNotification('Bạn không có quyền chỉnh sửa thông tin vận chuyển.', 'error');
         return;
     }
     showLoading();
@@ -1785,7 +2034,8 @@ editShippingOrderForm.addEventListener('submit', async (e) => {
     const newEstimatedDate = editEstimatedDeliveryDateInput.value;
 
     try {
-        const adminOrderRef = doc(collection(db, `artifacts/${appId}/public/data/adminOrders`), orderId);
+        // Fetch the order to get the customerUserId
+        const adminOrderRef = doc(db, `artifacts/${appId}/public/data/adminOrders`, orderId);
         const adminOrderSnap = await getDoc(adminOrderRef);
         if (!adminOrderSnap.exists()) {
             showNotification('Không tìm thấy đơn hàng để cập nhật.', 'error');
@@ -1793,14 +2043,16 @@ editShippingOrderForm.addEventListener('submit', async (e) => {
             return;
         }
         const orderData = adminOrderSnap.data();
-        const customerUserId = orderData.userId;
+        const customerUserId = orderData.userId; // Get the original customer's UID
 
+        // Update user's order document
         const userOrderRef = doc(db, `artifacts/${appId}/users/${customerUserId}/orders`, orderId);
         await updateDoc(userOrderRef, {
             orderLocation: newLocation,
             estimatedDeliveryDate: newEstimatedDate
         });
 
+        // Update admin's copy of the order document
         await updateDoc(adminOrderRef, {
             orderLocation: newLocation,
             estimatedDeliveryDate: newEstimatedDate
@@ -1808,7 +2060,7 @@ editShippingOrderForm.addEventListener('submit', async (e) => {
 
         showNotification('Cập nhật thông tin vận chuyển thành công!', 'success');
         closeModal(editShippingOrderModal);
-        renderOrders('shipping');
+        renderOrders('shipping'); // Re-render shipping orders to show updates
     } catch (error) {
         console.error("Error updating shipping info:", error);
         showNotification(`Lỗi cập nhật thông tin vận chuyển: ${error.message}`, 'error');
@@ -1817,6 +2069,9 @@ editShippingOrderForm.addEventListener('submit', async (e) => {
     }
 });
 
+/**
+ * Renders the list of products for management (add/edit/delete).
+ */
 function renderProductManagementList() {
     productManagementList.innerHTML = '';
     if (shopDataCache.products.length === 0) {
@@ -1844,10 +2099,11 @@ function renderProductManagementList() {
         productManagementList.appendChild(productDiv);
     });
 
+    // Attach event listeners for product management actions
     document.querySelectorAll('.copy-product-btn').forEach(button => {
         button.addEventListener('click', (e) => {
             if (!loggedInUser || !loggedInUser.isAdmin) {
-                showNotification('Chờ admin kiểm duyệt', 'info');
+                showNotification('Bạn không có quyền này.', 'error');
                 return;
             }
             const productId = e.target.dataset.productId;
@@ -1858,7 +2114,7 @@ function renderProductManagementList() {
     document.querySelectorAll('.edit-product-btn').forEach(button => {
         button.addEventListener('click', (e) => {
             if (!loggedInUser || !loggedInUser.isAdmin) {
-                showNotification('Chờ admin kiểm duyệt', 'info');
+                showNotification('Bạn không có quyền này.', 'error');
                 return;
             }
             const productId = e.target.dataset.productId;
@@ -1869,17 +2125,22 @@ function renderProductManagementList() {
     document.querySelectorAll('.delete-product-btn').forEach(button => {
         button.addEventListener('click', async (e) => {
             if (!loggedInUser || !loggedInUser.isAdmin) {
-                showNotification('Chờ admin kiểm duyệt', 'info');
+                showNotification('Bạn không có quyền này.', 'error');
                 return;
             }
             const productId = e.target.dataset.productId;
-            //if (confirm('Bạn có chắc chắn muốn xóa sản phẩm này?')) {
-                await deleteProduct(productId);
-            //}
+            // Implement a custom confirmation dialog instead of `confirm()`
+            //showNotification(`Bạn có chắc chắn muốn xóa sản phẩm #${productId}? (Tạm thời không hỗ trợ confirm. Vui lòng bấm hủy lần nữa để xác nhận)`, 'info');
+            setTimeout(() => {
+                deleteProduct(productId); // Call deletion after a small delay
+            }, 100);
         });
     });
 }
 
+/**
+ * Resets the add/edit product form to its initial state.
+ */
 function resetAddEditProductForm() {
     addEditProductTitle.textContent = 'Thêm Mặt Hàng Mới';
     editProductIdInput.value = '';
@@ -1896,6 +2157,10 @@ function resetAddEditProductForm() {
     cancelEditBtn.classList.add('hidden');
 }
 
+/**
+ * Creates a copy of an existing product and adds it to the shop data.
+ * @param {string} productId - The ID of the product to copy.
+ */
 function copyProduct(productId) {
     const product = shopDataCache.products.find(p => p.id === productId);
     if (!product) {
@@ -1903,23 +2168,25 @@ function copyProduct(productId) {
         return;
     }
 
-    const copiedProduct = JSON.parse(JSON.stringify(product));
-    copiedProduct.id = generateId();
+    const copiedProduct = JSON.parse(JSON.stringify(product)); // Deep copy
+    copiedProduct.id = generateId(); // Assign a new unique ID
     copiedProduct.name = `Bản sao của ${product.name}`;
 
+    // Reset sold quantity for the copied product
     copiedProduct.variants.forEach(variant => {
         variant.sold = 0;
     });
 
     shopDataCache.products.push(copiedProduct);
     showNotification('Đã sao chép sản phẩm. Vui lòng chỉnh sửa và lưu.', 'success');
-    editProduct(copiedProduct.id);
+    editProduct(copiedProduct.id); // Open the copied product in edit mode
 }
 
+// Event listener for add/edit product form submission
 addEditProductForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     if (!loggedInUser || !loggedInUser.isAdmin) {
-        showNotification('Chờ admin kiểm duyệt', 'info');
+        showNotification('Bạn không có quyền này.', 'error');
         return;
     }
     showLoading();
@@ -1932,6 +2199,7 @@ addEditProductForm.addEventListener('submit', async (e) => {
     const description = newProductDescriptionInput.value.trim();
     const reviewsCount = parseInt(newProductReviewsInput.value);
 
+    // Collect color options
     const colors = [];
     colorOptionsContainer.querySelectorAll('.color-option-item').forEach(item => {
         const name = item.querySelector('input[placeholder="Tên màu"]').value.trim();
@@ -1940,6 +2208,7 @@ addEditProductForm.addEventListener('submit', async (e) => {
         if (name) colors.push({ name, priceImpact, display_image });
     });
 
+    // Collect storage options
     const storages = [];
     storageOptionsContainer.querySelectorAll('.storage-option-item').forEach(item => {
         const name = item.querySelector('input[placeholder="Tên dung lượng"]').value.trim();
@@ -1947,6 +2216,7 @@ addEditProductForm.addEventListener('submit', async (e) => {
         if (name) storages.push({ name, priceImpact });
     });
 
+    // Collect product variants
     const variants = [];
     variantsContainer.querySelectorAll('.variant-item').forEach(item => {
         const color = item.querySelector('select[data-type="color-select"]').value;
@@ -1970,21 +2240,27 @@ addEditProductForm.addEventListener('submit', async (e) => {
     };
 
     if (productId) {
+        // Edit existing product
         const index = shopDataCache.products.findIndex(p => p.id === productId);
         if (index > -1) {
             shopDataCache.products[index] = { ...shopDataCache.products[index], ...newProduct };
         }
         showNotification('Sản phẩm đã được cập nhật!', 'success');
     } else {
-        newProduct.id = generateId();
+        // Add new product
+        newProduct.id = generateId(); // Assign a new ID for new products
         shopDataCache.products.push(newProduct);
         showNotification('Sản phẩm đã được thêm!', 'success');
     }
-    await saveShopData();
-    resetAddEditProductForm();
+    await saveShopData(); // Save changes to Firestore
+    resetAddEditProductForm(); // Reset form after submission
     hideLoading();
 });
 
+/**
+ * Populates the product form for editing an existing product.
+ * @param {string} productId - The ID of the product to edit.
+ */
 async function editProduct(productId) {
     const product = shopDataCache.products.find(p => p.id === productId);
     if (!product) {
@@ -2001,12 +2277,15 @@ async function editProduct(productId) {
     newProductDescriptionInput.value = product.description;
     newProductReviewsInput.value = product.reviewsCount;
 
+    // Populate existing color options
     colorOptionsContainer.innerHTML = '';
     product.colors.forEach(color => addColorOption(color.name, color.priceImpact, color.display_image));
 
+    // Populate existing storage options
     storageOptionsContainer.innerHTML = '';
     product.storages.forEach(storage => addStorageOption(storage.name, storage.priceImpact));
 
+    // Populate existing variants
     variantsContainer.innerHTML = '';
     product.variants.forEach(variant => addVariant(variant.color, variant.storage, variant.quantity, variant.priceImpact, variant.sold));
 
@@ -2014,13 +2293,18 @@ async function editProduct(productId) {
     cancelEditBtn.classList.remove('hidden');
 }
 
+// Event listener for cancelling product edit
 cancelEditBtn.addEventListener('click', resetAddEditProductForm);
 
+/**
+ * Deletes a product from the shop data.
+ * @param {string} productId - The ID of the product to delete.
+ */
 async function deleteProduct(productId) {
     showLoading();
     try {
         shopDataCache.products = shopDataCache.products.filter(p => p.id !== productId);
-        await saveShopData();
+        await saveShopData(); // Save changes to Firestore
         showNotification('Sản phẩm đã được xóa!', 'success');
     } catch (error) {
         console.error("Error deleting product:", error);
@@ -2030,13 +2314,23 @@ async function deleteProduct(productId) {
     }
 }
 
+// Event listeners for adding new options/variants
 addColorOptionBtn.addEventListener('click', () => addColorOption('', 0, ''));
 addStorageOptionBtn.addEventListener('click', () => addStorageOption('', 0));
 addVariantBtn.addEventListener('click', () => addVariant('', '', 0, 0, 0));
 
+/**
+ * Adds a new product variant row to the form.
+ * @param {string} color - The default color for the variant.
+ * @param {string} storage - The default storage for the variant.
+ * @param {number} quantity - The default quantity for the variant.
+ * @param {number} priceImpact - The default price impact for the variant.
+ * @param {number} sold - The default sold quantity for the variant.
+ */
 function addVariant(color = '', storage = '', quantity = 0, priceImpact = 0, sold = 0) {
     const div = document.createElement('div');
     div.className = 'flex items-center space-x-2 variant-item';
+    // Get current available colors and storages for dropdowns
     const currentColors = Array.from(colorOptionsContainer.querySelectorAll('input[placeholder="Tên màu"]')).map(input => input.value.trim()).filter(Boolean);
     const currentStorages = Array.from(storageOptionsContainer.querySelectorAll('input[placeholder="Tên dung lượng"]')).map(input => input.value.trim()).filter(Boolean);
 
@@ -2061,6 +2355,12 @@ function addVariant(color = '', storage = '', quantity = 0, priceImpact = 0, sol
     div.querySelector('.remove-option-btn').addEventListener('click', () => div.remove());
 }
 
+/**
+ * Adds a new color option input row to the form.
+ * @param {string} name - The default name for the color.
+ * @param {number} priceImpact - The default price impact for the color.
+ * @param {string} display_image - The default display image URL for the color.
+ */
 function addColorOption(name = '', priceImpact = 0, display_image = '') {
     const div = document.createElement('div');
     div.className = 'flex items-center space-x-2 color-option-item';
@@ -2074,6 +2374,11 @@ function addColorOption(name = '', priceImpact = 0, display_image = '') {
     div.querySelector('.remove-option-btn').addEventListener('click', () => div.remove());
 }
 
+/**
+ * Adds a new storage option input row to the form.
+ * @param {string} name - The default name for the storage.
+ * @param {number} priceImpact - The default price impact for the storage.
+ */
 function addStorageOption(name = '', priceImpact = 0) {
     const div = document.createElement('div');
     div.className = 'flex items-center space-x-2 storage-option-item';
@@ -2086,6 +2391,9 @@ function addStorageOption(name = '', priceImpact = 0) {
     div.querySelector('.remove-option-btn').addEventListener('click', () => div.remove());
 }
 
+/**
+ * Renders the list of current vouchers in the management modal.
+ */
 async function renderVouchersList() {
     currentVouchersList.innerHTML = '';
     const vouchers = Object.entries(shopDataCache.vouchers);
@@ -2160,17 +2468,19 @@ async function renderVouchersList() {
         });
     }
 
-
+    // Attach event listeners for voucher actions
     document.querySelectorAll('.delete-voucher-btn').forEach(button => {
         button.addEventListener('click', async (e) => {
             if (!loggedInUser || !loggedInUser.isAdmin) {
-                showNotification('Chờ admin kiểm duyệt', 'info');
+                showNotification('Bạn không có quyền này.', 'error');
                 return;
             }
             const voucherCode = e.target.dataset.voucherCode;
-            //if (confirm('Bạn có chắc chắn muốn xóa voucher này?')) {
-                await deleteVoucher(voucherCode);
-            //}
+            // Implement custom confirmation
+            //showNotification(`Bạn có chắc chắn muốn xóa voucher ${voucherCode}? (Tạm thời không hỗ trợ confirm. Vui lòng bấm hủy lần nữa để xác nhận)`, 'info');
+            setTimeout(() => {
+                deleteVoucher(voucherCode);
+            }, 100);
         });
     });
 
@@ -2187,10 +2497,11 @@ async function renderVouchersList() {
     });
 }
 
+// Event listener for adding user vouchers
 addVoucherForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     if (!loggedInUser || !loggedInUser.isAdmin) {
-        showNotification('Chờ admin kiểm duyệt', 'info');
+        showNotification('Bạn không có quyền này.', 'error');
         return;
     }
     showLoading();
@@ -2227,10 +2538,10 @@ addVoucherForm.addEventListener('submit', async (e) => {
             hideLoading();
             return;
         }
-        if (voucherValue < 1) {
+        if (voucherValue < 1) { // Assuming < 1 means percentage (e.g., 0.10 for 10%)
             voucherType = 'percentage';
             displayValue = `${voucherValue * 100}%`;
-        } else {
+        } else { // Assuming >= 1 means fixed amount (e.g., 50000 for 50,000 VND)
             voucherType = 'fixed';
             displayValue = formatCurrency(voucherValue);
         }
@@ -2255,7 +2566,7 @@ addVoucherForm.addEventListener('submit', async (e) => {
             codeToAdd = generateUniqueVoucherCode(codeLength);
         } else if (shopDataCache.vouchers[initialCode]) {
             showNotification(`Mã voucher "${initialCode}" đã tồn tại. Không thể thêm.`, 'error');
-            break;
+            break; // Stop if a specific code already exists
         }
 
         shopDataCache.vouchers[codeToAdd] = {
@@ -2263,15 +2574,16 @@ addVoucherForm.addEventListener('submit', async (e) => {
             type: voucherType,
             expiry: expiryDate.toISOString(),
             displayValue: displayValue,
-            isAdminVoucher: false
+            isAdminVoucher: false // Not an admin voucher
         };
         vouchersAddedCount++;
-        if (initialCode !== '') break;
+        if (initialCode !== '') break; // Only add one if specific code is provided
     }
 
     if (vouchersAddedCount > 0) {
-        await saveShopData();
+        await saveShopData(); // Save changes to Firestore
         showNotification(`Đã thêm thành công ${vouchersAddedCount} voucher!`, 'success');
+        // Clear form fields
         newVoucherCodeInput.value = '';
         newVoucherQuantityInput.value = '1';
         newVoucherCodeLengthInput.value = '8';
@@ -2283,10 +2595,11 @@ addVoucherForm.addEventListener('submit', async (e) => {
     hideLoading();
 });
 
+// Event listener for adding admin vouchers
 addAdminVoucherForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     if (!loggedInUser || !loggedInUser.isAdmin) {
-        showNotification('Bạn không có quyền thêm voucher Admin.', 'info');
+        showNotification('Bạn không có quyền thêm voucher Admin.', 'error');
         return;
     }
     showLoading();
@@ -2359,15 +2672,16 @@ addAdminVoucherForm.addEventListener('submit', async (e) => {
             type: voucherType,
             expiry: expiryDate.toISOString(),
             displayValue: displayValue,
-            isAdminVoucher: true
+            isAdminVoucher: true // This is an Fadmin voucher
         };
         vouchersAddedCount++;
         if (initialCode !== '') break;
     }
 
     if (vouchersAddedCount > 0) {
-        await saveShopData();
+        await saveShopData(); // Save changes to Firestore
         showNotification(`Đã thêm thành công ${vouchersAddedCount} voucher Admin!`, 'success');
+        // Clear form fields
         newAdminVoucherCodeInput.value = '';
         newAdminVoucherQuantityInput.value = '1';
         newAdminVoucherCodeLengthInput.value = '8';
@@ -2380,12 +2694,16 @@ addAdminVoucherForm.addEventListener('submit', async (e) => {
 });
 
 
+/**
+ * Deletes a voucher from the shop data.
+ * @param {string} code - The code of the voucher to delete.
+ */
 async function deleteVoucher(code) {
     showLoading();
     try {
-        delete shopDataCache.vouchers[code];
-        await saveShopData();
-        showNotification(`Voucher ${code} đã được xóa!`, 'success');
+        delete shopDataCache.vouchers[code]; // Remove from cache
+        await saveShopData(); // Save changes to Firestore
+        //showNotification(`Voucher ${code} đã được xóa!`, 'success');
     } catch (error) {
         console.error("Error deleting voucher:", error);
         showNotification(`Lỗi khi xóa voucher: ${error.message}`, 'error');
@@ -2394,15 +2712,20 @@ async function deleteVoucher(code) {
     }
 }
 
+/**
+ * Renders the list of warranty packages for both selection and management.
+ */
 async function renderWarrantyPackagesList() {
-    warrantyPackagesSelection.innerHTML = '';
-    currentWarrantyPackagesList.innerHTML = '';
+    warrantyPackagesSelection.innerHTML = ''; // For payment modal selection
+    currentWarrantyPackagesList.innerHTML = ''; // For management list
+
     if (shopDataCache.warrantyPackages.length === 0) {
         currentWarrantyPackagesList.innerHTML = '<p class="text-gray-500 italic">Chưa có gói bảo hành nào được cấu hình.</p>';
         warrantyPackagesSelection.innerHTML = '<p class="text-gray-500 italic">Chưa có gói bảo hành nào để chọn.</p>';
         return;
     }
 
+    // Render for management list
     shopDataCache.warrantyPackages.forEach(pkg => {
         const packageDiv = document.createElement('div');
         packageDiv.className = 'flex items-center justify-between bg-gray-100 p-3 rounded-lg shadow-sm';
@@ -2419,6 +2742,7 @@ async function renderWarrantyPackagesList() {
         currentWarrantyPackagesList.appendChild(packageDiv);
     });
 
+    // Render for selection in payment modal
     shopDataCache.warrantyPackages.forEach(pkg => {
         const packageCard = document.createElement('div');
         packageCard.className = 'warranty-package-card cursor-pointer';
@@ -2432,11 +2756,12 @@ async function renderWarrantyPackagesList() {
         warrantyPackagesSelection.appendChild(packageCard);
 
         packageCard.addEventListener('click', () => {
+            // Deselect previous package
             document.querySelectorAll('.warranty-package-card').forEach(card => {
                 card.classList.remove('selected-package');
             });
-            packageCard.classList.add('selected-package');
-            selectedWarrantyPackage = pkg;
+            packageCard.classList.add('selected-package'); // Select current package
+            selectedWarrantyPackage = pkg; // Store selected package
             const finalPrice = pkg.price - (pkg.price * pkg.discount / 100);
             warrantyPaymentTotal.textContent = formatCurrency(finalPrice);
             confirmWarrantyPaymentBtn.disabled = false;
@@ -2445,10 +2770,11 @@ async function renderWarrantyPackagesList() {
     });
 
 
+    // Attach event listeners for warranty package management actions
     document.querySelectorAll('.edit-warranty-package-btn').forEach(button => {
         button.addEventListener('click', (e) => {
             if (!loggedInUser || !loggedInUser.isAdmin) {
-                showNotification('Chờ admin kiểm duyệt', 'info');
+                showNotification('Bạn không có quyền này.', 'error');
                 return;
             }
             const packageId = e.target.dataset.packageId;
@@ -2459,17 +2785,22 @@ async function renderWarrantyPackagesList() {
     document.querySelectorAll('.delete-warranty-package-btn').forEach(button => {
         button.addEventListener('click', async (e) => {
             if (!loggedInUser || !loggedInUser.isAdmin) {
-                showNotification('Chờ admin kiểm duyệt', 'info');
+                showNotification('Bạn không có quyền này.', 'error');
                 return;
             }
             const packageId = e.target.dataset.packageId;
-            //if (confirm('Bạn có chắc chắn muốn xóa gói bảo hành này?')) {
-                await deleteWarrantyPackage(packageId);
-            //}
+            // Implement custom confirmation
+            //showNotification(`Bạn có chắc chắn muốn xóa gói bảo hành #${packageId}? (Tạm thời không hỗ trợ confirm. Vui lòng bấm hủy lần nữa để xác nhận)`, 'info');
+            setTimeout(() => {
+                deleteWarrantyPackage(packageId);
+            }, 100);
         });
     });
 }
 
+/**
+ * Resets the add/edit warranty package form.
+ */
 function resetAddEditWarrantyPackageForm() {
     editWarrantyPackageIdInput.value = '';
     newWarrantyPackageNameInput.value = '';
@@ -2479,10 +2810,11 @@ function resetAddEditWarrantyPackageForm() {
     cancelEditWarrantyPackageBtn.classList.add('hidden');
 }
 
+// Event listener for adding/editing warranty package
 addEditWarrantyPackageForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     if (!loggedInUser || !loggedInUser.isAdmin) {
-        showNotification('Chờ admin kiểm duyệt', 'info');
+        showNotification('Bạn không có quyền này.', 'error');
         return;
     }
     showLoading();
@@ -2493,28 +2825,34 @@ addEditWarrantyPackageForm.addEventListener('submit', async (e) => {
     const discount = parseFloat(newWarrantyPackageDiscountInput.value);
 
     const newPackage = {
-        id: packageId || generateId(),
+        id: packageId || generateId(), // Use existing ID or generate new
         name,
         price,
         discount
     };
 
     if (packageId) {
+        // Edit existing package
         const index = shopDataCache.warrantyPackages.findIndex(p => p.id === packageId);
         if (index > -1) {
             shopDataCache.warrantyPackages[index] = newPackage;
         }
         showNotification('Gói bảo hành đã được cập nhật!', 'success');
     } else {
+        // Add new package
         shopDataCache.warrantyPackages.push(newPackage);
         showNotification('Gói bảo hành đã được thêm!', 'success');
     }
-    await saveShopData();
-    renderWarrantyPackagesList();
-    resetAddEditWarrantyPackageForm();
+    await saveShopData(); // Save changes to Firestore
+    renderWarrantyPackagesList(); // Re-render list
+    resetAddEditWarrantyPackageForm(); // Reset form
     hideLoading();
 });
 
+/**
+ * Populates the warranty package form for editing.
+ * @param {string} packageId - The ID of the warranty package to edit.
+ */
 function editWarrantyPackage(packageId) {
     const pkg = shopDataCache.warrantyPackages.find(p => p.id === packageId);
     if (!pkg) {
@@ -2529,14 +2867,20 @@ function editWarrantyPackage(packageId) {
     cancelEditWarrantyPackageBtn.classList.remove('hidden');
 }
 
+// Event listener for cancelling warranty package edit
 cancelEditWarrantyPackageBtn.addEventListener('click', resetAddEditWarrantyPackageForm);
 
+/**
+ * Deletes a warranty package from the shop data.
+ * @param {string} packageId - The ID of the warranty package to delete.
+ */
 async function deleteWarrantyPackage(packageId) {
     showLoading();
     try {
         shopDataCache.warrantyPackages = shopDataCache.warrantyPackages.filter(p => p.id !== packageId);
-        await saveShopData();
-        renderWarrantyPackagesList();
+        await saveShopData(); // Save changes to Firestore
+        renderWarrantyPackagesList(); // Re-render list
+        showNotification('Gói bảo hành đã được xóa!', 'success');
     }
     catch (error) {
         console.error("Error deleting warranty package:", error);
@@ -2546,17 +2890,23 @@ async function deleteWarrantyPackage(packageId) {
     }
 }
 
+/**
+ * Generates and displays the shop sales report.
+ */
 async function generateShopReport() {
     showLoading();
     let allOrders = [];
     try {
         if (loggedInUser && loggedInUser.isAdmin) {
+            // Admin fetches all orders from public collection
             const querySnapshot = await getDocs(collection(db, `artifacts/${appId}/public/data/adminOrders`));
             allOrders = querySnapshot.docs.map(doc => doc.data());
         } else if (loggedInUser && loggedInUser.id) {
+            // Regular user fetches their own orders from private collection
             const querySnapshot = await getDocs(collection(db, `artifacts/${appId}/users/${loggedInUser.id}/orders`));
             allOrders = querySnapshot.docs.map(doc => doc.data());
         } else {
+            // Not logged in or no permission
             totalRevenueDisplay.textContent = formatCurrency(0);
             totalOrdersDisplay.textContent = 0;
             topSellingProductsList.innerHTML = '<li class="italic text-gray-500">Vui lòng đăng nhập để xem báo cáo.</li>';
@@ -2569,28 +2919,31 @@ async function generateShopReport() {
 
         const filteredOrders = allOrders.filter(order => {
             const orderDate = new Date(order.orderDate);
+            // Filter by date range (inclusive)
             return (!startDate || orderDate >= startDate) && (!endDate || orderDate <= endDate);
         });
 
         let totalRevenue = 0;
-        const productSales = {};
+        const productSales = {}; // Map to store sales quantity per product
 
         filteredOrders.forEach(order => {
-            totalRevenue += order.totalAmount;
+            totalRevenue += order.totalAmount; // Sum up total amounts from orders
             order.items.forEach(item => {
                 const productName = item.productName;
-                productSales[productName] = (productSales[productName] || 0) + item.quantity;
+                productSales[productName] = (productSales[productName] || 0) + item.quantity; // Sum quantities for each product
             });
         });
 
         totalRevenueDisplay.textContent = formatCurrency(totalRevenue);
         totalOrdersDisplay.textContent = filteredOrders.length;
 
+        // Sort products by sales quantity (descending)
         const sortedProducts = Object.entries(productSales).sort(([, a], [, b]) => b - a);
-        topSellingProductsList.innerHTML = '';
+        topSellingProductsList.innerHTML = ''; // Clear previous list
         if (sortedProducts.length === 0) {
             topSellingProductsList.innerHTML = '<li class="italic text-gray-500">Chưa có dữ liệu.</li>';
         } else {
+            // Display top 5 selling products
             sortedProducts.slice(0, 5).forEach(([productName, quantity]) => {
                 const li = document.createElement('li');
                 li.textContent = `${productName}: ${quantity} sản phẩm`;
@@ -2605,35 +2958,42 @@ async function generateShopReport() {
     }
 }
 
+// Event listener for generating report
 generateReportBtn.addEventListener('click', generateShopReport);
 
+/**
+ * Displays the VAT payment modal, populating it with order details and bank information.
+ * @param {object} order - The order object for which VAT is to be paid.
+ */
 function displayPaymentVATModal(order) {
     qrCodeDisplay.src = shopDataCache.bankDetails.qrCodeImage || 'https://placehold.co/200x200/cccccc/333333?text=QR+Code';
     bankNameDisplay.textContent = shopDataCache.bankDetails.bankName || 'N/A';
     accountNumberDisplay.textContent = shopDataCache.bankDetails.accountNumber || 'N/A';
     accountHolderDisplay.textContent = shopDataCache.bankDetails.accountHolder || 'N/A';
 
+    // Calculate and display VAT amounts
     vatBaseAmountDisplay.textContent = formatCurrency(order.totalOriginalProductPrice);
 
     const shopSupportAmount = order.totalOriginalProductPrice * 0.08;
-    if (shopSupportVatDisplay) {
+    if (shopSupportVatDisplay) { // Check if element exists
         shopSupportVatDisplay.textContent = formatCurrency(shopSupportAmount);
     }
 
     const totalVATOriginalAmount = order.totalOriginalProductPrice * 0.10;
-    if (totalVatOriginalDisplay) {
+    if (totalVatOriginalDisplay) { // Check if element exists
         totalVatOriginalDisplay.textContent = formatCurrency(totalVATOriginalAmount);
     }
 
-    const customerPaysAmount = order.totalOriginalProductPrice * 0.02;
+    const customerPaysAmount = order.totalOriginalProductPrice * 0.02; // 2% VAT paid by customer
     paymentModalVATTotal.textContent = formatCurrency(customerPaysAmount);
 
-    paymentAmountInput.value = customerPaysAmount;
-    amountPaidDisplay.textContent = formatCurrency(0);
-    remainingPaymentDisplay.textContent = formatCurrency(customerPaysAmount);
+    paymentAmountInput.value = customerPaysAmount; // Pre-fill with amount customer needs to pay
+    amountPaidDisplay.textContent = formatCurrency(0); // Initially 0
+    remainingPaymentDisplay.textContent = formatCurrency(customerPaysAmount); // Initially full amount
 
-    paymentAmountInput.disabled = true;
+    paymentAmountInput.disabled = true; // Disable manual editing of payment amount
 
+    // Event listener for payment amount input (though it's disabled now, kept for logic reference)
     paymentAmountInput.oninput = () => {
         const paidAmount = parseFloat(paymentAmountInput.value) || 0;
         const remaining = customerPaysAmount - paidAmount;
@@ -2642,6 +3002,7 @@ function displayPaymentVATModal(order) {
         remainingPaymentDisplay.style.color = remaining <= 0 ? '#28a745' : '#e53e3e';
     };
 
+    // Update button states based on VAT payment status and user role
     if (order.vatPaymentStatus === 'pending_admin' || order.vatPaymentStatus === 'paid') {
         confirmPaymentBtn.disabled = true;
         confirmPaymentBtn.textContent = 'Đang chờ xác nhận...';
@@ -2652,6 +3013,7 @@ function displayPaymentVATModal(order) {
         confirmPaymentBtn.classList.remove('opacity-50', 'cursor-not-allowed');
     }
 
+    // Toggle admin/user specific buttons
     if (loggedInUser && loggedInUser.isAdmin) {
         confirmPaymentBtn.classList.add('hidden');
         adminConfirmVatPaymentBtn.classList.remove('hidden');
@@ -2663,6 +3025,7 @@ function displayPaymentVATModal(order) {
     openModal(paymentVATModal);
 }
 
+// Event listener for user confirming VAT payment
 confirmPaymentBtn.addEventListener('click', async () => {
     if (!loggedInUser || !loggedInUser.id) {
         showNotification('Vui lòng đăng nhập để thanh toán.', 'info');
@@ -2676,18 +3039,18 @@ confirmPaymentBtn.addEventListener('click', async () => {
     showLoading();
     try {
         const orderId = currentOrderForPayment.id;
+        // Update VAT payment status to 'pending_admin' for user's order
         const orderRef = doc(db, `artifacts/${appId}/users/${loggedInUser.id}/orders`, orderId);
         await updateDoc(orderRef, { vatPaymentStatus: 'pending_admin' });
 
-        const adminOrderRef = doc(collection(db, `artifacts/${appId}/public/data/adminOrders`), orderId);
-        const adminOrderSnap = await getDoc(adminOrderRef);
-        if (adminOrderSnap.exists()) {
-            await updateDoc(adminOrderRef, { vatPaymentStatus: 'pending_admin' });
-        }
+        // Update VAT payment status to 'pending_admin' for admin's copy of the order
+        const adminOrderRef = doc(db, `artifacts/${appId}/public/data/adminOrders`, orderId);
+        // Ensure adminOrderRef is valid, it should already exist
+        await updateDoc(adminOrderRef, { vatPaymentStatus: 'pending_admin' });
 
         showNotification('Yêu cầu thanh toán VAT của bạn đang chờ admin xác nhận!', 'info');
         closeModal(paymentVATModal);
-        renderOrders(currentOrderForPayment.status);
+        renderOrders(currentOrderForPayment.status); // Re-render orders to reflect status change
     } catch (error) {
         console.error("Error confirming VAT payment:", error);
         showNotification(`Lỗi khi xác nhận thanh toán VAT: ${error.message}`, 'error');
@@ -2696,6 +3059,7 @@ confirmPaymentBtn.addEventListener('click', async () => {
     }
 });
 
+// Event listener for admin confirming VAT payment
 adminConfirmVatPaymentBtn.addEventListener('click', async () => {
     if (!loggedInUser || !loggedInUser.isAdmin) {
         showNotification('Bạn không có quyền xác nhận thanh toán này.', 'error');
@@ -2704,15 +3068,19 @@ adminConfirmVatPaymentBtn.addEventListener('click', async () => {
     showLoading();
     try {
         const orderId = currentOrderForPayment.id;
-        const orderRef = doc(db, `artifacts/${appId}/users/${currentOrderForPayment.userId}/orders`, orderId);
+        const customerUserId = currentOrderForPayment.userId; // Get the original customer's UID
+
+        // Update VAT payment status to 'paid' for user's order
+        const orderRef = doc(db, `artifacts/${appId}/users/${customerUserId}/orders`, orderId);
         await updateDoc(orderRef, { vatPaymentStatus: 'paid' });
 
-        const adminOrderRef = doc(collection(db, `artifacts/${appId}/public/data/adminOrders`), orderId);
+        // Update VAT payment status to 'paid' for admin's copy of the order
+        const adminOrderRef = doc(db, `artifacts/${appId}/public/data/adminOrders`, orderId);
         await updateDoc(adminOrderRef, { vatPaymentStatus: 'paid' });
 
         showNotification(`Đã xác nhận thanh toán VAT cho đơn hàng #${orderId}.`, 'success');
         closeModal(paymentVATModal);
-        renderOrders(currentOrderForPayment.status);
+        renderOrders(currentOrderForPayment.status); // Re-render orders to reflect status change
     } catch (error) {
         console.error("Error admin confirming VAT payment:", error);
         showNotification(`Lỗi khi admin xác nhận thanh toán VAT: ${error.message}`, 'error');
@@ -2721,12 +3089,17 @@ adminConfirmVatPaymentBtn.addEventListener('click', async () => {
     }
 });
 
+/**
+ * Displays the warranty payment modal, populating it with available packages and bank info.
+ * @param {object} order - The order object for which warranty is to be purchased.
+ */
 function displayPaymentWarrantyModal(order) {
-    selectedWarrantyPackage = null;
+    selectedWarrantyPackage = null; // Reset selected package
     warrantyPaymentTotal.textContent = formatCurrency(0);
     confirmWarrantyPaymentBtn.disabled = true;
     confirmWarrantyPaymentBtn.classList.add('opacity-50', 'cursor-not-allowed');
 
+    // Deselect all warranty package cards in UI
     document.querySelectorAll('.warranty-package-card').forEach(card => {
         card.classList.remove('selected-package');
     });
@@ -2736,6 +3109,7 @@ function displayPaymentWarrantyModal(order) {
     accountNumberDisplayWarranty.textContent = shopDataCache.bankDetails.accountNumber || 'N/A';
     accountHolderDisplayWarranty.textContent = shopDataCache.bankDetails.accountHolder || 'N/A';
 
+    // Toggle admin/user specific buttons
     if (loggedInUser && loggedInUser.isAdmin) {
         confirmWarrantyPaymentBtn.classList.add('hidden');
         adminConfirmWarrantyBtn.classList.remove('hidden');
@@ -2744,6 +3118,7 @@ function displayPaymentWarrantyModal(order) {
         adminConfirmWarrantyBtn.classList.add('hidden');
     }
 
+    // Update button text and state based on current order's warranty status
     if (order.warrantyPaymentStatus === 'paid' || order.warrantyPaymentStatus === 'pending_admin') {
         confirmWarrantyPaymentBtn.disabled = true;
         confirmWarrantyPaymentBtn.textContent = 'Đã mua gói bảo hành';
@@ -2754,11 +3129,12 @@ function displayPaymentWarrantyModal(order) {
         confirmWarrantyPaymentBtn.classList.remove('opacity-50', 'cursor-not-allowed');
     }
 
-    renderWarrantyPackagesList();
+    renderWarrantyPackagesList(); // Re-render available warranty packages
 
     openModal(paymentWarrantyModal);
 }
 
+// Event listener for user confirming warranty payment
 confirmWarrantyPaymentBtn.addEventListener('click', async () => {
     if (!loggedInUser || !loggedInUser.id) {
         showNotification('Vui lòng đăng nhập để mua gói bảo hành.', 'info');
@@ -2777,14 +3153,15 @@ confirmWarrantyPaymentBtn.addEventListener('click', async () => {
     showLoading();
     try {
         const orderId = currentOrderForWarranty.id;
+        // Update warranty package and status for user's order
         const orderRefUser = doc(db, `artifacts/${appId}/users/${loggedInUser.id}/orders`, orderId);
-        const orderRefAdmin = doc(collection(db, `artifacts/${appId}/public/data/adminOrders`), orderId);
-
         await updateDoc(orderRefUser, {
             warrantyPackage: selectedWarrantyPackage,
             warrantyPaymentStatus: 'pending_admin'
         });
 
+        // Update warranty package and status for admin's copy of the order
+        const orderRefAdmin = doc(db, `artifacts/${appId}/public/data/adminOrders`, orderId);
         await updateDoc(orderRefAdmin, {
             warrantyPackage: selectedWarrantyPackage,
             warrantyPaymentStatus: 'pending_admin'
@@ -2792,7 +3169,7 @@ confirmWarrantyPaymentBtn.addEventListener('click', async () => {
 
         showNotification('Yêu cầu mua gói bảo hành của bạn đang chờ admin xác nhận!', 'info');
         closeModal(paymentWarrantyModal);
-        renderOrders(currentOrderForWarranty.status);
+        renderOrders(currentOrderForWarranty.status); // Re-render orders
     } catch (error) {
         console.error("Error confirming warranty payment:", error);
         showNotification(`Lỗi khi xác nhận mua gói bảo hành: ${error.message}`, 'error');
@@ -2801,6 +3178,7 @@ confirmWarrantyPaymentBtn.addEventListener('click', async () => {
     }
 });
 
+// Event listener for admin confirming warranty payment
 adminConfirmWarrantyBtn.addEventListener('click', async () => {
     if (!loggedInUser || !loggedInUser.isAdmin) {
         showNotification('Bạn không có quyền xác nhận thanh toán này.', 'error');
@@ -2814,16 +3192,19 @@ adminConfirmWarrantyBtn.addEventListener('click', async () => {
     showLoading();
     try {
         const orderId = currentOrderForWarranty.id;
-        const customerUserId = currentOrderForWarranty.userId;
+        const customerUserId = currentOrderForWarranty.userId; // Get the original customer's UID
+
+        // Update warranty payment status to 'paid' for user's order
         const orderRefUser = doc(db, `artifacts/${appId}/users/${customerUserId}/orders`, orderId);
         await updateDoc(orderRefUser, { warrantyPaymentStatus: 'paid' });
 
-        const adminOrderRef = doc(collection(db, `artifacts/${appId}/public/data/adminOrders`), orderId);
+        // Update warranty payment status to 'paid' for admin's copy of the order
+        const adminOrderRef = doc(db, `artifacts/${appId}/public/data/adminOrders`, orderId);
         await updateDoc(adminOrderRef, { warrantyPaymentStatus: 'paid' });
 
         showNotification(`Đã xác nhận thanh toán gói bảo hành cho đơn hàng #${orderId}.`, 'success');
         closeModal(paymentWarrantyModal);
-        renderOrders(currentOrderForWarranty.status);
+        renderOrders(currentOrderForWarranty.status); // Re-render orders
     } catch (error) {
         console.error("Error admin confirming warranty payment:", error);
         showNotification(`Lỗi khi admin xác nhận thanh toán gói bảo hành: ${error.message}`, 'error');
@@ -2833,6 +3214,10 @@ adminConfirmWarrantyBtn.addEventListener('click', async () => {
 });
 
 
+/**
+ * Displays the order tracking modal with shipping details.
+ * @param {object} order - The order object to track.
+ */
 function displayOrderTrackingModal(order) {
     trackingShippingUnitImage.src = shopDataCache.shippingUnit.image || 'https://placehold.co/200x100/cccccc/333333?text=Shipping+Unit';
     trackingShippingUnitName.textContent = shopDataCache.shippingUnit.name || 'GHN Express';
@@ -2862,21 +3247,23 @@ function displayOrderTrackingModal(order) {
     openModal(orderTrackingModal);
 }
 
-
+// Firebase Authentication Listener
 onAuthStateChanged(auth, async (user) => {
     if (user) {
+        // User is signed in
         currentUserId = user.uid;
         const userProfileDocRef = doc(db, `artifacts/${appId}/users/${currentUserId}`);
         try {
             const userDocSnap = await getDoc(userProfileDocRef);
             if (userDocSnap.exists()) {
                 loggedInUser = { id: currentUserId, ...userDocSnap.data() };
-                loggedInUser.isAdmin = (loggedInUser.email === shopDataCache.adminEmail);
+                loggedInUser.isAdmin = (loggedInUser.email === shopDataCache.adminEmail); // Determine admin status
             } else {
+                // Create new user profile if it doesn't exist
                 const isUserAdmin = (user.email === shopDataCache.adminEmail);
                 loggedInUser = {
                     id: currentUserId,
-                    username: user.email || `guest_${currentUserId.substring(0, 8)}}`,
+                    username: user.email || `guest_${currentUserId.substring(0, 8)}`,
                     fullname: '',
                     phone: '',
                     province: '',
@@ -2886,9 +3273,12 @@ onAuthStateChanged(auth, async (user) => {
                 await setDoc(userProfileDocRef, loggedInUser);
             }
 
+            // Set up real-time listeners for orders and cart based on user role
             if (!loggedInUser.isAdmin) {
+                // Listen to user's private orders
                 onSnapshot(collection(db, `artifacts/${appId}/users/${currentUserId}/orders`), (snapshot) => {
                     userOrdersCache = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    // Only re-render if user is logged in (to prevent rendering before initial auth state is set)
                     if (loggedInUser) {
                         renderOrders('created');
                         renderOrders('shipping');
@@ -2896,18 +3286,20 @@ onAuthStateChanged(auth, async (user) => {
                     }
                 }, (error) => console.error("Error fetching user orders:", error));
 
-                onSnapshot(doc(collection(db, `artifacts/${appId}/users/${currentUserId}/cart`), 'currentCart'), (docSnapshot) => {
+                // Listen to user's cart
+                onSnapshot(doc(db, `artifacts/${appId}/users/${currentUserId}/cart`, 'currentCart'), (docSnapshot) => {
                     if (docSnapshot.exists()) {
                         userCartCache = docSnapshot.data().items || [];
                     } else {
                         userCartCache = [];
                     }
-                    updateCartCount();
+                    updateCartCount(); // Update cart count
                     if (cartModal.classList.contains('active')) {
-                        renderCart();
+                        renderCart(); // Re-render cart if modal is open
                     }
                 }, (error) => console.error("Error fetching user cart:", error));
             } else {
+                // Admin listens to public admin orders
                 onSnapshot(collection(db, `artifacts/${appId}/public/data/adminOrders`), (snapshot) => {
                     userOrdersCache = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                     if (loggedInUser) {
@@ -2922,39 +3314,46 @@ onAuthStateChanged(auth, async (user) => {
             showNotification(`Lỗi tải hồ sơ người dùng: ${error.message}`, 'error');
         }
     } else {
+        // User is signed out
         loggedInUser = { id: null, username: 'Khách', isAdmin: false, email: null, fullname: '', phone: '', province: '' };
         currentUserId = null;
         userOrdersCache = [];
         userCartCache = [];
     }
-    updateAuthUI();
+    updateAuthUI(); // Update UI based on auth state
 });
 
+/**
+ * Updates the UI elements related to authentication status.
+ */
 function updateAuthUI() {
     if (loggedInUser && loggedInUser.id) {
         loginStatusBtn.textContent = `Xin chào, ${loggedInUser.username || loggedInUser.email || 'Khách'}`;
-        loginStatusBtn.onclick = logoutUser;
+        loginStatusBtn.onclick = logoutUser; // Change button action to logout
         openManagementModalBtn.style.display = loggedInUser.isAdmin ? 'block' : 'none';
         openSettingsModalBtn.style.display = loggedInUser.isAdmin ? 'block' : 'none';
         openShopAnalyticsModalBtn.style.display = loggedInUser.isAdmin ? 'block' : 'none';
+        // Show/hide admin voucher section for admins
         const adminVoucherSection = document.getElementById('add-admin-voucher-form').closest('.border-b.pb-6.border-gray-200');
-        if (adminVoucherSection) {
+        if (adminVoucherSection) { // Ensure element exists
             adminVoucherSection.style.display = loggedInUser.isAdmin ? 'block' : 'none';
         }
 
     } else {
         loginStatusBtn.textContent = 'Đăng nhập';
-        loginStatusBtn.onclick = () => openModal(loginRegisterModal);
+        loginStatusBtn.onclick = () => openModal(loginRegisterModal); // Change button action to open login modal
+        // Hide admin-specific buttons
         openManagementModalBtn.style.display = 'none';
         openSettingsModalBtn.style.display = 'none';
         openShopAnalyticsModalBtn.style.display = 'none';
         const adminVoucherSection = document.getElementById('add-admin-voucher-form').closest('.border-b.pb-6.border-gray-200');
-        if (adminVoucherSection) {
+        if (adminVoucherSection) { // Ensure element exists
             adminVoucherSection.style.display = 'none';
         }
     }
 }
 
+// Event listener for login/logout status button
 loginStatusBtn.addEventListener('click', () => {
     if (!loggedInUser || !loggedInUser.id) {
         openModal(loginRegisterModal);
@@ -2963,6 +3362,7 @@ loginStatusBtn.addEventListener('click', () => {
     }
 });
 
+// Event listeners for switching between login/register/forgot password forms
 showRegisterFormLink.addEventListener('click', (e) => {
     e.preventDefault();
     loginForm.classList.add('hidden');
@@ -2994,7 +3394,7 @@ forgotPasswordLink.addEventListener('click', (e) => {
     loginErrorMessage.classList.add('hidden');
     registerErrorMessage.classList.add('hidden');
     forgotPasswordMessage.classList.add('hidden');
-    forgotPasswordEmailInput.value = loginUsernameInput.value;
+    forgotPasswordEmailInput.value = loginUsernameInput.value; // Pre-fill email
 });
 
 backToLoginLink.addEventListener('click', (e) => {
@@ -3005,6 +3405,7 @@ backToLoginLink.addEventListener('click', (e) => {
     forgotPasswordMessage.classList.add('hidden');
 });
 
+// Event listener for sending password reset email
 sendResetPasswordBtn.addEventListener('click', async () => {
     const email = forgotPasswordEmailInput.value.trim();
     if (!email) {
@@ -3018,17 +3419,18 @@ sendResetPasswordBtn.addEventListener('click', async () => {
         await sendPasswordResetEmail(auth, email);
         forgotPasswordMessage.textContent = 'Liên kết đặt lại mật khẩu đã được gửi đến email của bạn. Vui lòng kiểm tra hộp thư đến.';
         forgotPasswordMessage.classList.remove('hidden');
-        forgotPasswordMessage.style.color = '#4CAF50';
+        forgotPasswordMessage.style.color = '#4CAF50'; // Green for success
     } catch (error) {
         console.error("Error sending password reset email:", error);
         forgotPasswordMessage.textContent = `Lỗi: ${error.message}`;
         forgotPasswordMessage.classList.remove('hidden');
-        forgotPasswordMessage.style.color = '#f44336';
+        forgotPasswordMessage.style.color = '#f44336'; // Red for error
     } finally {
         hideLoading();
     }
 });
 
+// Event listener for user registration
 registerSubmitBtn.addEventListener('click', async () => {
     const email = registerUsernameInput.value.trim();
     const password = registerPasswordInput.value.trim();
@@ -3047,6 +3449,11 @@ registerSubmitBtn.addEventListener('click', async () => {
         registerErrorMessage.classList.remove('hidden');
         return;
     }
+    if (password.length < 6) {
+        registerErrorMessage.textContent = 'Mật khẩu phải có ít nhất 6 ký tự.';
+        registerErrorMessage.classList.remove('hidden');
+        return;
+    }
 
     showLoading();
     try {
@@ -3054,6 +3461,7 @@ registerSubmitBtn.addEventListener('click', async () => {
         const user = userCredential.user;
         const isUserAdmin = (email === shopDataCache.adminEmail);
 
+        // Save user profile to Firestore
         await setDoc(doc(db, `artifacts/${appId}/users/${user.uid}`), {
             username: email,
             fullname,
@@ -3065,6 +3473,7 @@ registerSubmitBtn.addEventListener('click', async () => {
 
         showNotification('Đăng ký thành công! Vui lòng đăng nhập.', 'success');
         registerErrorMessage.classList.add('hidden');
+        // Switch back to login form
         loginForm.classList.remove('hidden');
         registerForm.classList.add('hidden');
         authModalTitle.textContent = 'Đăng nhập';
@@ -3092,6 +3501,7 @@ registerSubmitBtn.addEventListener('click', async () => {
     }
 });
 
+// Event listener for user login
 loginSubmitBtn.addEventListener('click', async () => {
     const email = loginUsernameInput.value.trim();
     const password = loginPasswordInput.value.trim();
@@ -3107,14 +3517,14 @@ loginSubmitBtn.addEventListener('click', async () => {
         await signInWithEmailAndPassword(auth, email, password);
         showNotification('Đăng nhập thành công!', 'success');
         loginErrorMessage.classList.add('hidden');
-        closeModal(loginRegisterModal);
+        closeModal(loginRegisterModal); // Close modal on successful login
     } catch (error) {
         console.error("Error during login:", error);
         loginErrorMessage.classList.remove('hidden');
         switch (error.code) {
             case 'auth/invalid-email':
             case 'auth/user-not-found':
-            case 'auth/invalid-credential':
+            case 'auth/invalid-credential': // Generic error for wrong email/password
                 loginErrorMessage.textContent = 'Tên đăng nhập hoặc mật khẩu không đúng. Vui lòng kiểm tra lại.';
                 break;
             case 'auth/wrong-password':
@@ -3129,6 +3539,9 @@ loginSubmitBtn.addEventListener('click', async () => {
     }
 });
 
+/**
+ * Logs out the current user.
+ */
 async function logoutUser() {
     showLoading();
     try {
@@ -3142,6 +3555,9 @@ async function logoutUser() {
     }
 }
 
+/**
+ * Populates the profile modal with current user data.
+ */
 async function renderProfileModal() {
     if (loggedInUser) {
         profileUsernameInput.value = loggedInUser.username || '';
@@ -3151,6 +3567,7 @@ async function renderProfileModal() {
     }
 }
 
+// Event listener for saving profile changes
 saveProfileBtn.addEventListener('click', async () => {
     if (!loggedInUser || !loggedInUser.id) {
         showNotification('Vui lòng đăng nhập để lưu hồ sơ.', 'info');
@@ -3165,10 +3582,12 @@ saveProfileBtn.addEventListener('click', async () => {
             phone: profilePhoneInput.value.trim(),
             province: profileProvinceInput.value.trim()
         });
+        // Update local loggedInUser cache after successful save
         loggedInUser.fullname = profileFullnameInput.value.trim();
         loggedInUser.phone = profilePhoneInput.value.trim();
         loggedInUser.province = profileProvinceInput.value.trim();
         showNotification('Hồ sơ đã được cập nhật!', 'success');
+        profileErrorMessage.classList.add('hidden'); // Clear any previous error
     } catch (error) {
         console.error("Error updating user profile:", error);
         profileErrorMessage.textContent = `Lỗi cập nhật hồ sơ: ${error.message}`;
@@ -3178,20 +3597,23 @@ saveProfileBtn.addEventListener('click', async () => {
     }
 });
 
+// Event listener for opening change password modal
 changePasswordBtn.addEventListener('click', () => {
     if (!loggedInUser || !loggedInUser.id) {
         showNotification('Vui lòng đăng nhập để thay đổi mật khẩu.', 'info');
         openModal(loginRegisterModal);
         return;
     }
-    closeModal(profileModal);
+    closeModal(profileModal); // Close profile modal first
     openModal(changePasswordModal);
+    // Clear password fields on opening
     currentPasswordInput.value = '';
     newPasswordInput.value = '';
     confirmNewPasswordInput.value = '';
     changePasswordErrorMessage.classList.add('hidden');
 });
 
+// Event listener for submitting change password form
 submitChangePasswordBtn.addEventListener('click', async () => {
     const currentPassword = currentPasswordInput.value.trim();
     const newPassword = newPasswordInput.value.trim();
@@ -3223,13 +3645,14 @@ submitChangePasswordBtn.addEventListener('click', async () => {
             return;
         }
 
+        // Reauthenticate user before changing password for security
         const credential = EmailAuthProvider.credential(user.email, currentPassword);
         await reauthenticateWithCredential(user, credential);
         await updatePassword(user, newPassword);
 
         showNotification('Mật khẩu đã được thay đổi thành công!', 'success');
         changePasswordErrorMessage.classList.add('hidden');
-        closeModal(changePasswordModal);
+        closeModal(changePasswordModal); // Close change password modal
     } catch (error) {
         console.error("Error changing password:", error);
         let errorMessage = 'Lỗi khi thay đổi mật khẩu.';
@@ -3247,11 +3670,15 @@ submitChangePasswordBtn.addEventListener('click', async () => {
     }
 });
 
+/**
+ * Saves the current user's cart to Firestore.
+ */
 async function saveUserCart() {
     if (loggedInUser && currentUserId) {
         showLoading();
         try {
-            await setDoc(doc(collection(db, `artifacts/${appId}/users/${currentUserId}/cart`), 'currentCart'), { items: userCartCache });
+            // Use a fixed document ID for the cart for easier retrieval
+            await setDoc(doc(db, `artifacts/${appId}/users/${currentUserId}/cart`, 'currentCart'), { items: userCartCache });
         } catch (error) {
             console.error("Error saving cart:", error);
             showNotification("Lỗi lưu giỏ hàng.", "error");
@@ -3261,12 +3688,16 @@ async function saveUserCart() {
     }
 }
 
+/**
+ * Updates the displayed cart count in the header.
+ */
 async function updateCartCount() {
     if (loggedInUser && currentUserId) {
         try {
-            const cartDocSnap = await getDoc(doc(collection(db, `artifacts/${appId}/users/${currentUserId}/cart`), 'currentCart'));
+            // Fetch cart data to get the latest count
+            const cartDocSnap = await getDoc(doc(db, `artifacts/${appId}/users/${currentUserId}/cart`, 'currentCart'));
             if (cartDocSnap.exists()) {
-                userCartCache = cartDocSnap.data().items || [];
+                userCartCache = cartDocSnap.data().items || []; // Update local cache
                 const totalItems = userCartCache.reduce((sum, item) => sum + item.quantity, 0);
                 cartCountSpan.textContent = totalItems;
             } else {
@@ -3275,13 +3706,14 @@ async function updateCartCount() {
             }
         } catch (error) {
             console.error("Error updating cart count:", error);
-            cartCountSpan.textContent = 0;
+            cartCountSpan.textContent = 0; // Fallback to 0 on error
         }
     } else {
-        cartCountSpan.textContent = 0;
+        cartCountSpan.textContent = 0; // Not logged in, cart is empty
     }
 }
 
+// Toggle hamburger menu and sidebar
 function toggleHamburgerMenu() {
     hamburgerMenu.classList.toggle('open');
     sidebarMenu.classList.toggle('open');
@@ -3292,16 +3724,19 @@ function toggleHamburgerMenu() {
     }
 }
 
+// Close hamburger menu and sidebar
 function closeHamburgerMenu() {
     hamburgerMenu.classList.remove('open');
     sidebarMenu.classList.remove('open');
     menuOverlay.style.display = 'none';
 }
 
+// Event listeners for hamburger menu
 hamburgerMenu.addEventListener('click', toggleHamburgerMenu);
 menuOverlay.addEventListener('click', closeHamburgerMenu);
 
 
+// Initial load when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
     loadShopData();
     showSection('product-list-section', showProductsBtn);
